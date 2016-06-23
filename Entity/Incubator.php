@@ -52,14 +52,14 @@ class Incubator extends Entity implements
     /**
      * @ORM\OneToMany(targetEntity="Rack", mappedBy="incubator", fetch="EXTRA_LAZY")
      *
-     * @var \Doctrine\Common\Collections\ArrayCollection
+     * @var ArrayCollection
      */
     protected $racks;
 
     /**
      * @ORM\OneToMany(targetEntity="Vial", mappedBy="incubator", fetch="EXTRA_LAZY")
      *
-     * @var \Doctrine\Common\Collections\ArrayCollection
+     * @var ArrayCollection
      */
     protected $vials;
 
@@ -79,22 +79,35 @@ class Incubator extends Entity implements
     private $temperature;
 
     /**
+     * @ORM\OneToOne(targetEntity="IncubatorSensor",
+     *     mappedBy="incubator",
+     *     cascade={"persist", "remove"},
+     *     orphanRemoval=true)
+     *
+     * @var IncubatorSensor
+     */
+    private $sensor;
+
+
+    /**
      * Construct Incubator
      *
      * @param float $temperature
+     * @param float $humidity
      */
-    public function __construct($temperature = 25)
+    public function __construct($temperature = 25.0, $humidity = 50.0)
     {
         $this->name = 'New incubator';
         $this->temperature = $temperature;
         $this->racks = new ArrayCollection();
         $this->vials = new ArrayCollection();
+        $this->sensor = new IncubatorSensor($temperature, $humidity, 600, $this);
     }
 
     /**
      * Get racks
      *
-     * @return \Doctrine\Common\Collections\ArrayCollection
+     * @return ArrayCollection
      */
     public function getRacks()
     {
@@ -104,7 +117,7 @@ class Incubator extends Entity implements
     /**
      * Get vials
      *
-     * @return \Doctrine\Common\Collections\ArrayCollection
+     * @return ArrayCollection
      */
     public function getVials()
     {
@@ -114,7 +127,7 @@ class Incubator extends Entity implements
     /**
      * Get living vials
      *
-     * @return Doctrine\Common\Collections\ArrayCollection
+     * @return ArrayCollection
      */
     public function getLivingVials()
     {
@@ -160,6 +173,25 @@ class Incubator extends Entity implements
         
         foreach ($this->getLivingVials() as $vial) {
             $vial->updateStorageConditions();
+        }
+    }
+
+    /**
+     * @return IncubatorSensor
+     */
+    public function getSensor()
+    {
+        return $this->sensor;
+    }
+
+    /**
+     * @param IncubatorSensor $sensor
+     */
+    public function setSensor($sensor)
+    {
+        $this->sensor = $sensor;
+        if ($sensor->getIncubator() !== $this) {
+            $sensor->setIncubator($this);
         }
     }
 }
