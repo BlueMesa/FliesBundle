@@ -1,0 +1,108 @@
+{% extends "BluemesaFliesBundle:Vial:layout.html.twig" %}
+{% use "BluemesaSiteTemplateBundle:Show:modal.html.twig" %}
+{% import "BluemesaSiteTemplateBundle:Macros:show.html.twig" as s %}
+
+{% block header_row %}
+    <div class="col-sm-offset-3 col-sm-9">
+        {% block page_header %}
+            <h1>{% block headline %}Incubators{% endblock headline %}</h1>
+        {% endblock page_header %}
+    </div>
+{% endblock header_row %}
+
+{% block modal_header %}
+    {{ incubator }}
+    {% if incubator.sensor.online %}
+        <span class="pull-right">
+                &nbsp;<i class="fa fa-circle icon-success" title="online" aria-hidden="true"></i>
+            </span>
+    {% else %}
+        <span class="pull-right">
+                &nbsp;<i class="fa fa-circle icon-danger" title="offline" aria-hidden="true"></i>
+            </span>
+    {% endif %}
+    {%  if incubator.sensor.tooCold %}
+        <span class="pull-right">
+                &nbsp;<i class="fa fa-exclamation-triangle icon-primary" title="too cold" aria-hidden="true"></i>
+            </span>
+    {%  endif %}
+    {%  if incubator.sensor.tooHot %}
+        <span class="pull-right">
+                &nbsp;<i class="fa fa-exclamation-triangle icon-danger" title="too hot" aria-hidden="true"></i>
+            </span>
+    {%  endif %}
+    {%  if incubator.sensor.tooDry %}
+        <span class="pull-right">
+                &nbsp;<i class="fa fa-times-circle icon-warning" title="too dry" aria-hidden="true"></i>
+            </span>
+    {%  endif %}
+{% endblock modal_header %}
+
+{% block modal_body %}
+    {{ s.row("Preset temperature", incubator.sensor.presetTemperature ~ "℃") }}
+    {{ s.row("Preset humidity", incubator.sensor.presetHumidity ~ "% rH") }}
+    {% if incubator.sensor.latestReading %}
+        {{ s.row("Last update", incubator.sensor.latestReading.timestamp | date("d M Y H:m:s"))  }}
+        {% if incubator.sensor.tooCold %}
+            {{ s.row("Current temperature", incubator.sensor.latestReading.temperature ~ "℃", null, null, null, null, "text-primary") }}
+        {% elseif incubator.sensor.tooHot %}
+            {{ s.row("Current temperature", incubator.sensor.latestReading.temperature ~ "℃", null, null, null, null, "text-danger") }}
+        {% else %}
+            {{ s.row("Current temperature", incubator.sensor.latestReading.temperature ~ "℃") }}
+        {% endif %}
+        {% if incubator.sensor.tooDry %}
+            {{ s.row("Current humidity", incubator.sensor.latestReading.humidity ~ "% rH", null, null, null, null, "text-warning") }}
+        {% else %}
+            {{ s.row("Current humidity", incubator.sensor.latestReading.humidity ~ "% rH") }}
+        {% endif %}
+        <div class="sensor-chart">
+            <div class="dropdown">
+                <a class= "btn btn-default btn-sm" id="dLabel" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa fa-bars" aria-hidden="true"></i>
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="dLabel">
+                    <li class="dropdown-form-header">Select chart period</li>
+                    <li role="separator" class="divider"></li>
+                    {% form_theme form _self %}
+                    {% block _sensor_chart_submit_widget %}
+                        {% set attr = {'class': 'btn btn-primary btn-block'} %}
+                        {{ block('submit_widget') }}
+                    {% endblock %}
+                    {{ form_start(form) }}
+                    {{ form_widget(form) }}
+                    {{ form_end(form) }}
+                </ul>
+            </div>
+            <div id="chart"></div>
+        </div>
+    {% endif %}
+{% endblock modal_body %}
+
+{% block modal_footer %}
+    {% if is_granted('ROLE_ADMIN') or is_granted('EDIT', incubator) %}
+        <a href="{{ path('bluemesa_flies_incubator_edit', { 'id': incubator.id }) }}" class="btn btn-primary">Edit</a>
+    {% endif %}
+{% endblock modal_footer %}
+
+{% block foot_script %}
+    {{ parent() }}
+    {% if incubator.sensor.latestReading %}
+        <script src="//code.highcharts.com/4.1.8/highcharts.js"></script>
+        <script type="text/javascript">
+            {{ chart(chart) }}
+        </script>
+        <script type="text/javascript">
+            function toggleDateFields(element) {
+                if (element.val()) {
+                    $('#sensor_chart_start').parents('.form-group').hide();
+                    $('#sensor_chart_end').parents('.form-group').hide();
+                } else {
+                    $('#sensor_chart_start').parents('.form-group').show();
+                    $('#sensor_chart_end').parents('.form-group').show();
+                }
+            }
+            $('#sensor_chart_period').change(function() {toggleDateFields($(this))});
+            toggleDateFields($('#sensor_chart_period'));
+        </script>
+    {% endif %}
+{% endblock %}

@@ -64,25 +64,11 @@ class Incubator extends Entity implements
     protected $vials;
 
     /**
-     * @ORM\Column(type="float")
-     * @Serializer\Expose
-     * @Assert\NotBlank(message = "Temperature must be specified")
-     * @Assert\Range(
-     *      min = 4,
-     *      max = 42,
-     *      minMessage = "Temperature cannot be lower than 4℃",
-     *      maxMessage = "Temperature cannot be higher than 42℃"
-     * )
-     *
-     * @var float
-     */
-    private $temperature;
-
-    /**
      * @ORM\OneToOne(targetEntity="IncubatorSensor",
      *     mappedBy="incubator",
      *     cascade={"persist", "remove"},
      *     orphanRemoval=true)
+     * @Serializer\Expose
      *
      * @var IncubatorSensor
      */
@@ -98,7 +84,6 @@ class Incubator extends Entity implements
     public function __construct($temperature = 25.0, $humidity = 50.0)
     {
         $this->name = 'New incubator';
-        $this->temperature = $temperature;
         $this->racks = new ArrayCollection();
         $this->vials = new ArrayCollection();
         $this->sensor = new IncubatorSensor($temperature, $humidity, 600, $this);
@@ -142,7 +127,7 @@ class Incubator extends Entity implements
     
     /**
      * {@inheritdoc}
-     */    
+     */
     public function getContents() {
         $contents = array_merge($this->getRacks()->toArray(), $this->getVials()->toArray());
         return new ArrayCollection($contents);
@@ -150,10 +135,10 @@ class Incubator extends Entity implements
     
     /**
      * {@inheritdoc}
-     */ 
+     */
     public function getTemperature()
     {
-        return $this->temperature;
+        return $this->sensor->getPresetTemperature();
     }
 
     /**
@@ -163,10 +148,12 @@ class Incubator extends Entity implements
      */
     public function setTemperature($temperature)
     {
-        $this->temperature = $temperature;
+        $this->sensor->setPresetTemperature($temperature);
         
         foreach ($this->getRacks() as $rack) {
+            /** @var Rack $rack */
             foreach ($rack->getContents() as $vial) {
+                /** @var Vial $vial */
                 $vial->updateStorageConditions();
             }
         }

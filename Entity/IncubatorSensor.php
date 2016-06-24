@@ -29,7 +29,7 @@ use JMS\Serializer\Annotation as Serializer;
 class IncubatorSensor extends Sensor
 {
     /**
-     * @ORM\ManyToOne(targetEntity="Incubator", inversedBy="sensor")
+     * @ORM\OneToOne(targetEntity="Incubator", inversedBy="sensor")
      * @ORM\JoinColumn(onDelete="CASCADE")
      *
      * @var Incubator
@@ -45,6 +45,7 @@ class IncubatorSensor extends Sensor
     {
         parent::__construct($temperature, $humidity, $updateRate);
         $this->incubator = $incubator;
+        $this->name = $this->incubator->getName();
     }
 
     /**
@@ -64,5 +65,21 @@ class IncubatorSensor extends Sensor
         if ($incubator->getSensor() !== $this) {
             $incubator->setSensor($this);
         }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getName()
+    {
+        return $this->incubator->getName();
+    }
+
+    /**
+     * @param string $name
+     */
+    public function setName($name)
+    {
+        $this->incubator->setName($name);
     }
 }

@@ -1,31 +1,32 @@
 <?php
 
 /*
- * Copyright 2011 Radoslaw Kamil Ejsmont <radoslaw@ejsmont.net>
+ * This file is part of the BluemesaFliesBundle.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) 2016 BlueMesa LabDB Contributors <labdb@bluemesa.eu>
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace Bluemesa\Bundle\FliesBundle\Controller;
 
-use Symfony\Component\HttpFoundation\Request;
+use Bluemesa\Bundle\AclBundle\Controller\SecureCRUDController;
+use Bluemesa\Bundle\CoreBundle\Controller\RestControllerTrait;
+use Bluemesa\Bundle\CoreBundle\Entity\DatePeriod;
+use Bluemesa\Bundle\FliesBundle\Entity\Incubator;
+use Bluemesa\Bundle\FliesBundle\Form\IncubatorType;
+use Bluemesa\Bundle\SensorBundle\Charts\SensorChart;
+use Bluemesa\Bundle\SensorBundle\Entity\Reading;
+use Bluemesa\Bundle\SensorBundle\Form\SensorChartType;
+use FOS\RestBundle\Controller\Annotations as REST;
+use FOS\RestBundle\View\View;
+use JMS\SecurityExtraBundle\Annotation\SatisfiesParentSecurityPolicy;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
-use JMS\SecurityExtraBundle\Annotation\SatisfiesParentSecurityPolicy;
+use Symfony\Component\HttpFoundation\Request;
 
-use Bluemesa\Bundle\AclBundle\Controller\SecureCRUDController;
-
-use Bluemesa\Bundle\FliesBundle\Form\IncubatorType;
 
 /**
  * IncubatorController class
@@ -36,9 +37,60 @@ use Bluemesa\Bundle\FliesBundle\Form\IncubatorType;
  */
 class IncubatorController extends SecureCRUDController
 {
+    use RestControllerTrait;
+
     const ENTITY_CLASS = 'Bluemesa\Bundle\FliesBundle\Entity\Incubator';
     const ENTITY_NAME = 'incubator|incubators';
-    
+
+    /**
+     * @REST\View()
+     * @REST\Get("/{incubator}.{_format}",
+     *     defaults={"_format" = "html", "period" = "24"}, requirements={"incubator" = "\d+"})
+     * @REST\Post("/{incubator}.{_format}",
+     *     defaults={"_format" = "html", "period" = "24"}, requirements={"incubator" = "\d+"})
+     * @REST\Get("/{incubator}/from/{start}/until/{end}.{_format}",
+     *     defaults={"_format" = "html"}, requirements={"incubator" = "\d+"})
+     * @REST\Get("/{incubator}/from/{start}.{_format}",
+     *     defaults={"_format" = "html"}, requirements={"incubator" = "\d+"})
+     *
+     * @ParamConverter("incubator", class="BluemesaFliesBundle:Incubator", options={"id" = "incubator"})
+     * @ParamConverter("period")
+     *
+     * @param  Request     $request
+     * @param  Incubator   $incubator
+     * @param  DatePeriod  $period
+     * @return View
+     */
+    public function getAction(Request $request, Incubator $incubator, DatePeriod $period)
+    {
+        $form = $this->createForm(SensorChartType::class, $period, array(
+            'action' => $this->generateUrl('bluemesa_flies_incubator_get_1', array(
+                'incubator' => $incubator->getId(),
+                '_format' => $request->get('_format')))
+        ));
+        $form->handleRequest($request);
+        $chart = new SensorChart($incubator->getSensor(), $period);
+        $view = $this->view()
+            ->setData(array('incubator' => $incubator))
+            ->setTemplateData(array(
+                'period' => $period,
+                'form' => $form->createView(),
+                'chart' => $chart));
+
+        return $view;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @Route("/show/{id}")
+     */
+    public function showAction(Request $request, $id)
+    {
+        return $this->redirectToRoute('bluemesa_flies_incubator_get', array(
+            'incubator' => $id,
+            '_format' => $request->get('_format')));
+    }
 
     /**
      * {@inheritdoc}
