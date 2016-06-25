@@ -1,6 +1,7 @@
 {% extends "BluemesaFliesBundle:Vial:layout.html.twig" %}
 {% use "BluemesaSiteTemplateBundle:Show:modal.html.twig" %}
 {% import "BluemesaSiteTemplateBundle:Macros:show.html.twig" as s %}
+{% import 'BluemesaSiteTemplateBundle:Macros:status.html.twig' as status %}
 
 {% block header_row %}
     <div class="col-sm-offset-3 col-sm-9">
@@ -12,30 +13,8 @@
 
 {% block modal_header %}
     {{ incubator }}
-    {% if incubator.sensor.online %}
-        <span class="pull-right">
-                &nbsp;<i class="fa fa-circle icon-success" title="online" aria-hidden="true"></i>
-            </span>
-    {% else %}
-        <span class="pull-right">
-                &nbsp;<i class="fa fa-circle icon-danger" title="offline" aria-hidden="true"></i>
-            </span>
-    {% endif %}
-    {%  if incubator.sensor.tooCold %}
-        <span class="pull-right">
-                &nbsp;<i class="fa fa-exclamation-triangle icon-primary" title="too cold" aria-hidden="true"></i>
-            </span>
-    {%  endif %}
-    {%  if incubator.sensor.tooHot %}
-        <span class="pull-right">
-                &nbsp;<i class="fa fa-exclamation-triangle icon-danger" title="too hot" aria-hidden="true"></i>
-            </span>
-    {%  endif %}
-    {%  if incubator.sensor.tooDry %}
-        <span class="pull-right">
-                &nbsp;<i class="fa fa-times-circle icon-warning" title="too dry" aria-hidden="true"></i>
-            </span>
-    {%  endif %}
+    {{ status.online(incubator.sensor) }}
+    {{ status.environmental(incubator.sensor) }}
 {% endblock modal_header %}
 
 {% block modal_body %}
