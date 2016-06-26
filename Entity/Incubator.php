@@ -1,37 +1,27 @@
 <?php
 
 /*
- * Copyright 2013 Radoslaw Kamil Ejsmont <radoslaw@ejsmont.net>
+ * This file is part of the BluemesaFliesBundle.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) 2016 BlueMesa LabDB Contributors <labdb@bluemesa.eu>
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace Bluemesa\Bundle\FliesBundle\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
-use JMS\Serializer\Annotation as Serializer;
-use Symfony\Component\Validator\Constraints as Assert;
-
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Criteria;
-
+use Bluemesa\Bundle\AclBundle\Entity\OwnedEntityInterface;
 use Bluemesa\Bundle\CoreBundle\Entity\Entity;
 use Bluemesa\Bundle\CoreBundle\Entity\NamedInterface;
 use Bluemesa\Bundle\CoreBundle\Entity\NamedTrait;
-
-use Bluemesa\Bundle\AclBundle\Entity\OwnedEntityInterface;
 use Bluemesa\Bundle\StorageBundle\Entity\StorageUnitInterface;
 use Bluemesa\Bundle\StorageBundle\Entity\TermocontrolledInterface;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Criteria;
+use Doctrine\ORM\Mapping as ORM;
+use JMS\Serializer\Annotation as Serializer;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * Incubator class
@@ -135,6 +125,14 @@ class Incubator extends Entity implements
     
     /**
      * {@inheritdoc}
+     *
+     * @Assert\NotBlank(message = "Temperature must be specified")
+     * @Assert\Range(
+     *      min = 4,
+     *      max = 42,
+     *      minMessage = "Temperature cannot be lower than 4℃",
+     *      maxMessage = "Temperature cannot be higher than 42℃"
+     * )
      */
     public function getTemperature()
     {
@@ -164,6 +162,36 @@ class Incubator extends Entity implements
     }
 
     /**
+     * Get humidity
+     *
+     * @Assert\NotBlank(message = "Humidity must be specified")
+     * @Assert\Range(
+     *      min = 0,
+     *      max = 100,
+     *      minMessage = "Humidity cannot be lower than 0%",
+     *      maxMessage = "Humidity cannot be higher than 100%"
+     * )
+     *
+     * @return float
+     */
+    public function getHumidity()
+    {
+        return $this->sensor->getPresetHumidity();
+    }
+
+    /**
+     * Set humidity
+     *
+     * @param float $humidity
+     */
+    public function setHumidity($humidity)
+    {
+        $this->sensor->setPresetTemperature($humidity);
+    }
+
+    /**
+     * Get sensor
+     *
      * @return IncubatorSensor
      */
     public function getSensor()
@@ -172,6 +200,8 @@ class Incubator extends Entity implements
     }
 
     /**
+     * Set sensor
+     *
      * @param IncubatorSensor $sensor
      */
     public function setSensor($sensor)

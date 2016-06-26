@@ -31,7 +31,7 @@ class LoadCrossVials extends AbstractFixture implements OrderedFixtureInterface,
 {
 
     /**
-     * @var Symfony\Component\DependencyInjection\ContainerInterface
+     * @var \Symfony\Component\DependencyInjection\ContainerInterface
      */
     private $container;
 

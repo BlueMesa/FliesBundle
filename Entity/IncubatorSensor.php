@@ -1,7 +1,7 @@
 <?php
 
 /*
- * This file is part of the XXX.
+ * This file is part of the BluemesaFliesBundle.
  * 
  * Copyright (c) 2016 BlueMesa LabDB Contributors <labdb@bluemesa.eu>
  * 

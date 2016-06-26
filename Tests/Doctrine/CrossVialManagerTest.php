@@ -62,13 +62,13 @@ class CrossVialManagerTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $this->entityManager = $this->getMock('Doctrine\Common\Persistence\ObjectManager');
-        $mr = $this->getMock('Doctrine\Common\Persistence\ManagerRegistry');
+        $this->entityManager = $this->getMockBuilder('Doctrine\Common\Persistence\ObjectManager')->getMock();
+        $mr = $this->getMockBuilder('Doctrine\Common\Persistence\ManagerRegistry')->getMock();
         $mr->expects($this->once())
             ->method('getManager')
             ->will($this->returnValue($this->entityManager));
-        $this->aclProvider = $this->getMock('Symfony\Component\Security\Acl\Model\MutableAclProviderInterface');
-        $this->userProvider = $this->getMock('Symfony\Component\Security\Core\User\UserProviderInterface');
+        $this->aclProvider = $this->getMockBuilder('Symfony\Component\Security\Acl\Model\MutableAclProviderInterface')->getMock();
+        $this->userProvider = $this->getMockBuilder('Symfony\Component\Security\Core\User\UserProviderInterface')->getMock();
         
         $this->om = new CrossVialManager();
         $this->om->setManagerRegistry($mr);

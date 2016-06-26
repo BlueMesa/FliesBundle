@@ -52,6 +52,7 @@ class IncubatorControllerTest extends WebTestCase
         $client->submit($form);
         $this->assertEquals(302,$client->getResponse()->getStatusCode());
         $result = $client->followRedirect();
+        $result = $client->followRedirect();
         $this->assertEquals(1, $result->filter('html:contains("Incubator Hot incubator")')->count());
     }
 
@@ -76,8 +77,9 @@ class IncubatorControllerTest extends WebTestCase
         $client = $this->getAuthenticatedClient();
 
         $crawler = $client->request('GET', '/flies/incubators/show/1');
+        $result = $client->followRedirect();
         $this->assertTrue($client->getResponse()->isSuccessful());
-        $this->assertEquals(1, $crawler->filter('html:contains("Incubator Test incubator")')->count());
+        $this->assertEquals(1, $result->filter('html:contains("Test incubator")')->count());
     }
 
     public function testShowNotFound()
@@ -85,6 +87,8 @@ class IncubatorControllerTest extends WebTestCase
         $client = $this->getAuthenticatedClient();
 
         $client->request('GET', '/flies/incubators/show/0');
+        $response = $client->getResponse();
+        $result = $client->followRedirect();
         $response = $client->getResponse();
         $this->assertEquals(404,$response->getStatusCode());
     }
@@ -109,6 +113,7 @@ class IncubatorControllerTest extends WebTestCase
 
         $client->submit($form);
         $this->assertEquals(302,$client->getResponse()->getStatusCode());
+        $result = $client->followRedirect();
         $result = $client->followRedirect();
         $this->assertEquals(1, $result->filter('span.input-text:contains("16")')->count());
     }
