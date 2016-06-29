@@ -21,7 +21,7 @@
     {{ s.row("Preset temperature", incubator.sensor.presetTemperature ~ "℃") }}
     {{ s.row("Preset humidity", incubator.sensor.presetHumidity ~ "% rH") }}
     {% if incubator.sensor.latestReading %}
-        {{ s.row("Last update", incubator.sensor.latestReading.timestamp | date("d M Y H:m:s"))  }}
+        {{ s.row("Last update", incubator.sensor.latestReading.timestamp | date("d M Y H:i:s"))  }}
         {% if incubator.sensor.tooCold %}
             {{ s.row("Current temperature", incubator.sensor.latestReading.temperature ~ "℃", null, null, null, null, "text-primary") }}
         {% elseif incubator.sensor.tooHot %}
