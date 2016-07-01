@@ -26,6 +26,7 @@ use Bluemesa\Bundle\SearchBundle\Controller\SearchController as BaseSearchContro
 use Bluemesa\Bundle\FliesBundle\Search\SearchQuery;
 use Bluemesa\Bundle\FliesBundle\Form\SearchType;
 use Bluemesa\Bundle\FliesBundle\Form\AdvancedSearchType;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * Search controller for the flies bundle
@@ -41,14 +42,14 @@ class SearchController extends BaseSearchController
     /**
      * {@inheritdoc}
      */
-    protected function handleSearchableRepository($repository, $searchQuery)
+    protected function handleSearchableRepository(Request $request, $repository, $searchQuery)
     {        
         if (! $searchQuery instanceof SearchQuery) {
             throw new \InvalidArgumentException();
         }
         
         $output = array_merge(
-                parent::handleSearchableRepository($repository, $searchQuery),
+                parent::handleSearchableRepository($request, $repository, $searchQuery),
                 array('filter' => $searchQuery->getFilter())
         );
         
@@ -58,7 +59,7 @@ class SearchController extends BaseSearchController
     /**
      * {@inheritdoc}
      */
-    protected function handleNonSearchableRepository($repository, $searchQuery)
+    protected function handleNonSearchableRepository(Request $request, $repository, $searchQuery)
     {
         if (! $searchQuery instanceof SearchQuery) {
             throw new \InvalidArgumentException();
