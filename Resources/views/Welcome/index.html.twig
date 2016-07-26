@@ -75,7 +75,9 @@
       <ul class="list-group" id="incubators">
         {% for incubator in incubators %}
         <li class="list-group-item">
-          <a href="{{ path('bluemesa_flies_incubator_get', { 'incubator': incubator.id }) }}"><b>{{ incubator }}</b></a>
+          <a href="{{
+            path('bluemesa_flies_incubator_getincubator', { 'incubator': incubator.id })
+          }}"><b>{{ incubator }}</b></a>
           {{ status.temperature(incubator.temperature) }}
           {{ status.online(incubator.sensor) }}
           {{ status.environmental(incubator.sensor) }}

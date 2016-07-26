@@ -61,10 +61,10 @@ class IncubatorController extends SecureCRUDController
      * @param  DatePeriod  $period
      * @return View
      */
-    public function getAction(Request $request, Incubator $incubator, DatePeriod $period)
+    public function getIncubatorAction(Request $request, Incubator $incubator, DatePeriod $period)
     {
         $form = $this->createForm(SensorChartType::class, $period, array(
-            'action' => $this->generateUrl('bluemesa_flies_incubator_get_1', array(
+            'action' => $this->generateUrl('bluemesa_flies_incubator_getincubator_1', array(
                 'incubator' => $incubator->getId(),
                 '_format' => $request->get('_format')))
         ));
@@ -87,7 +87,7 @@ class IncubatorController extends SecureCRUDController
      */
     public function showAction(Request $request, $id)
     {
-        return $this->redirectToRoute('bluemesa_flies_incubator_get', array(
+        return $this->redirectToRoute('bluemesa_flies_incubator_getincubator', array(
             'incubator' => $id,
             '_format' => $request->get('_format')));
     }
