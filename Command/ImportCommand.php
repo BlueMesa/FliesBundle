@@ -19,10 +19,12 @@
 namespace Bluemesa\Bundle\FliesBundle\Command;
 
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Helper\QuestionHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Question\Question;
 use Symfony\Component\Security\Acl\Permission\MaskBuilder;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
@@ -89,10 +91,12 @@ class ImportCommand extends Command
             }
         }
 
-        $dialog = $this->getHelperSet()->get('dialog');
+        /** @var QuestionHelper $questionHelper */
+        $questionHelper = $this->getHelperSet()->get('question');
         $this->container = $this->getApplication()->getKernel()->getContainer();
 
-        $om = $this->container->get('bluemesa.core.doctrine.registry')->getManagerForClass('Bluemesa\Bundle\CoreBundle\Entity\Entity');
+        $dm = $this->container->get('doctrine')->getManager();
+        $om = $this->container->get('bluemesa.core.doctrine.registry')->getManagerForClass('Bluemesa\Bundle\FliesBundle\Entity\Stock');
         $vm = $this->container->get('bluemesa.core.doctrine.registry')->getManagerForClass('Bluemesa\Bundle\FliesBundle\Entity\StockVial');
 
         $om->disableAutoAcl();
@@ -165,8 +169,8 @@ class ImportCommand extends Command
                 }
             }
         }
-        
-        $om->getConnection()->beginTransaction();
+
+        $dm->getConnection()->beginTransaction();
         
         foreach ($stocks as $user_name => $user_stocks) {
             
@@ -237,11 +241,12 @@ class ImportCommand extends Command
         }
         
         $message = 'Stocks and vials have been created. Commit?';
-        if ($dialog->askConfirmation($output, '<question>' . $message . '</question>', true)) {
-            $om->getConnection()->commit();
+        $question = new Question(sprintf('<question>' . $message . '</question>', 'yes'));
+        if ($questionHelper->ask($input, $output, $question) == 'yes') {
+            $dm->getConnection()->commit();
         } else {
-            $om->getConnection()->rollback();
-            $om->close();
+            $dm->getConnection()->rollback();
+            $dm->getConnection()->close();
         }
         
         $om->enableAutoAcl();
