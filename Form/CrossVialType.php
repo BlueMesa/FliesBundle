@@ -61,10 +61,10 @@ class CrossVialType extends AbstractType
                 )
                 ->add('outcome', ChoiceType::class, array(
                         'choices'     => array(
-                            'successful' => 'Successful',
-                            'failed'     => 'Failed',
-                            'sterile'    => 'Sterile',
-                            'undefined'  => 'Undefined'
+                            'Successful' => 'successful',
+                            'Failed'     => 'failed',
+                            'Sterile'    => 'sterile',
+                            'Undefined'  => 'undefined'
                         ),
                         'placeholder' => false,
                         'expanded'    => true,

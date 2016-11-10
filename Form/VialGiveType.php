@@ -56,9 +56,9 @@ class VialGiveType extends AbstractType
                 )
                 ->add('type', ChoiceType::class, array(
                         'choices'     => array(
-                            'give'       => 'Just give this vial',
-                            'flip'       => 'Flip and give this vial',
-                            'flipped'    => 'Flip this vial and give the flipped vial'
+                            'Just give this vial'                      => 'give',
+                            'Flip and give this vial'                  => 'flip',
+                            'Flip this vial and give the flipped vial' => 'flipped'
                         ),
                         'label'       => 'Flip',
                         'expanded'    => true,

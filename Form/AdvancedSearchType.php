@@ -57,8 +57,8 @@ class AdvancedSearchType extends AbstractType
                 ->add('filter', ChoiceType::class, array(
                         'label'       => 'Scope',
                         'choices'     => array(
-                            'crossvial'     => 'Crosses',
-                            'injectionvial' => 'Injections'
+                            'Crosses'    => 'crossvial',
+                            'Injections' => 'injectionvial'
                         ),
                         'expanded'    => true,
                         'placeholder' => 'Stocks',
@@ -69,10 +69,10 @@ class AdvancedSearchType extends AbstractType
                 ->add('opts', ChoiceType::class, array(
                         'label'     => 'Options',
                         'choices'   => array(
-                            'private' => 'Only private',
-                            'dead'    => 'Include dead',
-                            'notes'   => 'Include comments',
-                            'vendor'  => 'Include vendor ID',
+                            'Only private'      => 'private',
+                            'Include dead'      => 'dead',
+                            'Include comments'  => 'notes',
+                            'Include vendor ID' => 'vendor',
                         ),
                         'expanded'  => true,
                         'multiple'  => true,
