@@ -273,7 +273,7 @@ class StockController extends SecureCRUDController
             if (! is_numeric($pieces[count($pieces) - 1])) {
                 $pieces[] = '2';
             }
-            $route = ($currentRoute == 'default') ? 'bluemesa_flies_vial_list_1' : implode('_', $pieces);
+            $route = ($currentRoute == 'default') ? 'bluemesa_flies_stock_list_1' : implode('_', $pieces);
         }
 
         $routeParameters = ($filter instanceof StockFilter) ?
