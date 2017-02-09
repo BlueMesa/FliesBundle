@@ -24,8 +24,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\Question;
-use Symfony\Component\Security\Acl\Permission\MaskBuilder;
+use Symfony\Component\Console\Question\ConfirmationQuestion;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\Exception\UsernameNotFoundException;
 
@@ -46,12 +45,12 @@ class ImportCommand extends Command
     protected function configure()
     {
         $this
-            ->setName('flydb:import')
-            ->setDescription('Import stocks from CSV')
+            ->setName('labdb:flies:import')
+            ->setDescription('Import stocks from spreadsheet')
             ->addArgument(
-                'csv',
+                'excel',
                 InputArgument::REQUIRED,
-                'CSV file to import from'
+                'Spreadsheet file to import from'
             )
             ->addArgument(
                 'logfile',
@@ -74,8 +73,7 @@ class ImportCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $filename = $input->getArgument('csv');
-        $file = fopen($filename,'r');
+        $excelFile = $input->getArgument('excel');
 
         $logfilename = $input->getArgument('logfile');
         $logfile = fopen($logfilename,'w');
@@ -95,78 +93,83 @@ class ImportCommand extends Command
         $questionHelper = $this->getHelperSet()->get('question');
         $this->container = $this->getApplication()->getKernel()->getContainer();
 
+        /** @var \PHPExcel $excel */
+        $excel = $this->container->get('phpexcel')->createPHPExcelObject($excelFile);
+
         $dm = $this->container->get('doctrine')->getManager();
         $om = $this->container->get('bluemesa.core.doctrine.registry')->getManagerForClass('Bluemesa\Bundle\FliesBundle\Entity\Stock');
         $vm = $this->container->get('bluemesa.core.doctrine.registry')->getManagerForClass('Bluemesa\Bundle\FliesBundle\Entity\StockVial');
 
         $om->disableAutoAcl();
         $vm->disableAutoAcl();
-        
+
+        $sheet = $excel->setActiveSheetIndex(0);
+        $highestRow = $sheet->getHighestRow();
+        $highestColumn = $sheet->getHighestColumn();
+
         $stocks = array();
         $stock_register = array();
         $vials = array();
-        
-        if ($file) {
-            while ($data = fgetcsv($file,0,"\t")) {
-                $trim = " \t\n\r\0\x0B\"";
-                $owner_name = trim($data[0],$trim);
-                $stock_name = trim($data[1],$trim);
-                $stock_genotype = trim($data[2],$trim);
-                $creator_name = trim($data[4],$trim);
-                $stock_notes = trim($data[5],$trim);
-                $stock_vendor = trim($data[6],$trim);
-                $stock_vendor_id = trim($data[7],$trim);
-                $stock_info_url = str_replace(" ","",trim($data[8],$trim));
-                $stock_verified = trim($data[9],$trim) == "yes" ? true : false;
-                $stock_vials_size = trim($data[10],$trim);
-                $stock_vials_size = $stock_vials_size == "" ? 'medium' : $stock_vials_size;
-                $stock_vials_number = (integer) trim($data[11],$trim);
-                $stock_vials_number = $stock_vials_number <= 0 ? 1 : $stock_vials_number;
-                $stock_vials_food = trim($data[12],$trim);
-                $stock_vials_food = $stock_vials_food == "" ? 'standard' : $stock_vials_food;
-                
-                $test = $om->getRepository('Bluemesa\Bundle\FliesBundle\Entity\Stock')->findOneByName($stock_name);
-                
-                if ((!in_array($stock_name, $stock_register))&&($creator_name == "")&&(null === $test)) {
-                    
-                    if (($stock_vendor != "")&&($stock_vendor_id != "")) {
-                        $output->write("Querying FlyBase for " . $stock_name . ": ");
-                        $stock_data = $this->getStockData($stock_vendor, $stock_vendor_id);
-                        if (count($stock_data) == 1) {
-                            $stock_genotype = $stock_data[0]['stock_genotype'];
-                            $stock_info_url = $stock_data[0]['stock_link'];
-                            $output->writeln("success");
-                        } elseif (count($stock_data) != 1) {
-                            $output->writeln("failed");
-                        }
+
+        for ($row = 2; $row <= $highestRow; $row++) {
+            $data = $sheet->rangeToArray('A' . $row . ':' . $highestColumn . $row, null, true, false);
+            $owner_name = trim($data[0][0]);
+            $stock_name = trim($data[0][1]);
+            $stock_genotype = trim($data[0][2]);
+            $creator_name = trim($data[0][4]);
+            $stock_notes = trim($data[0][5]);
+            $stock_vendor = trim($data[0][6]);
+            $stock_vendor_id = trim($data[0][7]);
+            $stock_info_url = str_replace(" ","",trim($data[0][8]));
+            $stock_verified = trim($data[0][9]) == "yes" ? true : false;
+            $stock_vials_size = trim($data[0][10]);
+            $stock_vials_size = $stock_vials_size == "" ? 'medium' : $stock_vials_size;
+            $stock_vials_number = (integer) trim($data[0][11]);
+            $stock_vials_number = $stock_vials_number <= 0 ? 1 : $stock_vials_number;
+            $stock_vials_food = trim($data[0][12]);
+            $stock_vials_food = $stock_vials_food == "" ? 'standard' : $stock_vials_food;
+
+            $test = $om->getRepository('Bluemesa\Bundle\FliesBundle\Entity\Stock')->findOneByName($stock_name);
+
+            if ((!in_array($stock_name, $stock_register))&&(null === $test)) {
+
+                if (($stock_vendor != "")&&($stock_vendor_id != "")) {
+                    $output->write("Querying FlyBase for " . $stock_name . ": ");
+                    $stock_data = $this->getStockData($stock_vendor, $stock_vendor_id);
+                    if (count($stock_data) == 1) {
+                        $stock_genotype = $stock_data[0]['stock_genotype'];
+                        $stock_info_url = $stock_data[0]['stock_link'];
+                        $output->writeln("success");
+                    } elseif (count($stock_data) != 1) {
+                        $output->writeln("failed");
                     }
-                    
-                    $stock = new Stock();
-                    $stock->setName($stock_name);
-                    $stock->setGenotype($stock_genotype);
-                    $stock->setNotes($stock_notes);
-                    $stock->setVendor($stock_vendor);
-                    $stock->setVendorId($stock_vendor_id);
-                    $stock->setInfoURL($stock_info_url);
-                    $stock->setVerified($stock_verified);
-                    
-                    for ($i = 0; $i < $stock_vials_number - 1; $i++) {
-                        $vial = new StockVial();
-                        $stock->addVial($vial);
-                    }
-                    $stock_vials = $stock->getVials();
-                    foreach ($stock_vials as $vial) {
-                        $vial->setSize($stock_vials_size);
-                        $vial->setFood($stock_vials_food);
-                    }
-                    
-                    $stock_register[] = $stock_name;
-                    $stocks[$owner_name][$stock_name] = $stock;
-                } else {
-                    $vials[$owner_name][$stock_name]['size'] = $stock_vials_size;
-                    $vials[$owner_name][$stock_name]['number'] = $stock_vials_number;
-                    $vials[$owner_name][$stock_name]['food'] = $stock_vials_food;
                 }
+
+                $stock = new Stock();
+                $stock->setName($stock_name);
+                $stock->setGenotype($stock_genotype);
+                $stock->setNotes($stock_notes);
+                $stock->setVendor($stock_vendor);
+                $stock->setVendorId($stock_vendor_id);
+                $stock->setInfoURL($stock_info_url);
+                $stock->setVerified($stock_verified);
+
+                for ($i = 0; $i < $stock_vials_number - 1; $i++) {
+                    $vial = new StockVial();
+                    $stock->addVial($vial);
+                }
+                $stock_vials = $stock->getVials();
+                foreach ($stock_vials as $vial) {
+                    $vial->setSize($stock_vials_size);
+                    $vial->setFood($stock_vials_food);
+                }
+
+                $stock_register[] = $stock_name;
+                $stocks[$owner_name][$stock_name] = $stock;
+            } else {
+                $vials[$owner_name][$stock_name]['size'] = $stock_vials_size;
+                $vials[$owner_name][$stock_name]['number'] = $stock_vials_number;
+                $vials[$owner_name][$stock_name]['food'] = $stock_vials_food;
             }
         }
 
@@ -241,12 +244,14 @@ class ImportCommand extends Command
         }
         
         $message = 'Stocks and vials have been created. Commit?';
-        $question = new Question(sprintf('<question>' . $message . '</question>', 'yes'));
-        if ($questionHelper->ask($input, $output, $question) == 'yes') {
+        $question = new ConfirmationQuestion(sprintf('<question>' . $message . '</question>', false));
+        if ($questionHelper->ask($input, $output, $question)) {
             $dm->getConnection()->commit();
+            $output->writeln("<info>Import successful!</info>");
         } else {
             $dm->getConnection()->rollback();
             $dm->getConnection()->close();
+            $output->writeln("<comment>Import cancelled!</comment>");
         }
         
         $om->enableAutoAcl();
