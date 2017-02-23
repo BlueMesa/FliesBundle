@@ -4,3 +4,35 @@
 {% block modal_footer %}
     {{ f.buttons(form.vars.value, 'bluemesa_flies_stock') }}
 {% endblock modal_footer %}
+
+{% block info_messages %}
+    {% if existing_stock is defined and not empty %}
+        <div class="alert alert-warning">
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+            <h4 class="alert-header">Stock {{ existing_stock.name }} already exists!</h4>
+            <p>
+                Stock names must be unique. If you want to create a new stock, please specify a different name.
+                If you just want to create a new vial of stock
+                {% spaceless %}
+                {% if is_granted('ROLE_ADMIN') or is_granted('VIEW', existing_stock) %}
+                {% set uuid = random() ~ '_' ~ existing_stock.id  %}
+                <span class="popover-trigger" id="span_{{ uuid }}"
+                      data-placement="bottom" data-container="#span_{{ uuid }}"
+                      data-delay="500" data-link="{# TODO - fix this route: path('bluemesa_flies_ajax_popover')#}"
+                      data-type="stock" data-id="{{ existing_stock.id }}">
+                    <a href="{{ path('bluemesa_flies_stock_show', { 'id': existing_stock.id }) }}">
+                        {{ existing_stock.name }}
+                    </a>
+                </span>
+                {% else %}
+                    {{ existing_stock.name }}
+                {% endif %}
+                {% endspaceless %}, click "yes" button below.
+            </p>
+            <p>Do you want to create a new vial instead of a stock?</p>
+            <a href="{# TODO - fix this route: path('bluemesa_flies_stockvial_create', { 'id': existing_stock.id }) #}"
+               class="btn btn-sm btn-primary alert-footer">Yes, please</a>
+            <button type="button" class="btn btn-sm btn-default alert-footer" data-dismiss="alert">No, thanks</button>
+        </div>
+    {% endif %}
+{% endblock info_messages %}

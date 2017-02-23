@@ -54,9 +54,9 @@ class VialListener
      * Constructor.
      *
      * @DI\InjectParams({
-     *     "manager" = @DI\Inject("bluemesa.doctrine.vial_manager")
-     *     "session" = @DI\Inject("session")
-     *     "pdfLabel" = @DI\Inject("bluemesa.flies.pdf_label")
+     *     "manager" = @DI\Inject("bluemesa.doctrine.vial_manager"),
+     *     "session" = @DI\Inject("session"),
+     *     "pdf" = @DI\Inject("bluemesa.flies.pdf_label")
      * })
      *
      * @param VialManager $manager

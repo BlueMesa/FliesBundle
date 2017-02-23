@@ -18,15 +18,6 @@ use FOS\RestBundle\Controller\Annotations as REST;
 use FOS\RestBundle\View\View;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
-use JMS\SecurityExtraBundle\Annotation\SatisfiesParentSecurityPolicy;
-
-use Bluemesa\Bundle\FliesBundle\Doctrine\VialManager;
-use Bluemesa\Bundle\FliesBundle\Label\PDFLabel;
-
-use Bluemesa\Bundle\FliesBundle\Entity\Stock;
-use Bluemesa\Bundle\FliesBundle\Entity\StockVial;
 
 
 /**
@@ -102,9 +93,7 @@ class StockController extends Controller
      */
     public function newAction(Request $request)
     {
-        $view = $this->getCrudHandler()->handle($request);
-        dump($view);
-        return $view;
+        return $this->getCrudHandler()->handle($request);
     }
 
     /**
@@ -198,106 +187,5 @@ FLYBASE_SQL;
         $vendors = $stmt->fetchAll();
 
         return new View($vendors);
-    }
-
-
-    /* TODO: modify methods below */
-
-
-    /**
-     * Create stock
-     *
-     * @Route("/new")
-     * @Template()
-     * @SatisfiesParentSecurityPolicy
-     *
-     * @param  \Symfony\Component\HttpFoundation\Request           $request
-     * @return \Symfony\Component\HttpFoundation\Response | array
-     */
-    public function createAction(Request $request)
-    {
-        $om = $this->getObjectManager();
-        /** @var VialManager $vm */
-        $vm = $this->getObjectManager('Bluemesa\Bundle\FliesBundle\Entity\Vial');
-        $class = $this->getEntityClass();
-        $stock = new $class();
-        $existingStock = null;
-        $data = array('stock' => $stock, 'number' => 1, 'size' => 'medium');
-        $form = $this->createForm($this->getCreateForm(), $data);
-
-        $form->handleRequest($request);
-        if ($form->isValid()) {
-            $data = $form->getData();
-            /** @var Stock $stock */
-            $stock = $data['stock'];
-            $number = $data['number'];
-            $size = $data['size'];
-            $food = $data['food'];
-
-            for ($i = 0; $i < $number - 1; $i++) {
-                $vial = new StockVial();
-                $stock->addVial($vial);
-            }
-
-            $vials = $stock->getVials();
-
-            foreach ($vials as $vial) {
-                $vial->setSize($size);
-                $vial->setFood($food);
-            }
-
-            $om->persist($stock);
-            $om->flush();
-
-            $this->addSessionFlash('success', 'Stock ' . $stock . ' was created.');
-
-            if ($this->getSession()->get('autoprint') == 'enabled') {
-                $labelMode = ($this->getSession()->get('labelmode','std') == 'alt');
-                $pdf = $this->get('bluemesafolks.pdflabel');
-                $pdf->addLabel($vials, $labelMode);
-                if ($this->submitPrintJob($pdf)) {
-                    $vm->markPrinted($vials);
-                    $vm->flush();
-                }
-            }
-
-            $route = str_replace("_create", "_show", $request->attributes->get('_route'));
-            $url = $this->generateUrl($route,array('id' => $stock->getId()));
-
-            return $this->redirect($url);
-        } elseif ($stock instanceof Stock) {
-            $existingStock = $om->getRepository($this->getEntityClass())
-                                ->findOneBy(array('name' => $stock->getName()));
-        }
-
-        return array('form' => $form->createView(), 'existingStock' => $existingStock);
-    }
-    
-    /**
-     * Submit print job
-     *
-     * @param  \Bluemesa\Bundle\FliesBundle\Label\PDFLabel  $pdf
-     * @param  integer                          $count
-     * @return boolean
-     */
-    protected function submitPrintJob(PDFLabel $pdf, $count = 1)
-    {
-        $jobStatus = $pdf->printPDF();
-        if ($jobStatus == 'successfull-ok') {
-            if ($count == 1) {
-                $this->get('session')->getFlashBag()
-                     ->add('success', 'Label for 1 vial was sent to the printer.');
-            } else {
-                $this->get('session')->getFlashBag()
-                     ->add('success', 'Labels for ' . $count . ' vials were sent to the printer. ');
-            }
-
-            return true;
-        } else {
-            $this->get('session')->getFlashBag()
-                 ->add('error', 'There was an error printing labels. The print server said: ' . $jobStatus);
-
-            return false;
-        }
     }
 }

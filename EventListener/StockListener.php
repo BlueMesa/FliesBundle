@@ -197,4 +197,26 @@ class StockListener
         $event = new VialEvent($stock->getVials());
         $this->dispatcher->dispatch(FlyEvents::VIALS_CREATED, $event);
     }
+
+    /**
+     * @param NewActionEvent $event
+     */
+    public function onNewCompleted(NewActionEvent $event)
+    {
+        $stock = $event->getEntity();
+        if (!$stock instanceof Stock) {
+            return;
+        };
+
+        $view = $event->getView();
+        if ($view->getResponse() instanceof RedirectResponse) {
+            return;
+        }
+
+        if ($stock->getId() === null) {
+            $repository = $this->registry->getRepository(Stock::class);
+            $existing = $repository->findOneBy(array('name' => $stock->getName()));
+            $view->setTemplateData(array_merge($view->getTemplateData(), array('existing_stock' => $existing)));
+        }
+    }
 }
