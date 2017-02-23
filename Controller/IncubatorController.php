@@ -44,13 +44,13 @@ class IncubatorController extends SecureCRUDController
 
     /**
      * @REST\View()
-     * @REST\Get("/{incubator}.{_format}",
+     * @REST\Get("/{incubator}",
      *     defaults={"_format" = "html", "period" = "24"}, requirements={"incubator" = "\d+"})
-     * @REST\Post("/{incubator}.{_format}",
+     * @REST\Post("/{incubator}",
      *     defaults={"_format" = "html", "period" = "24"}, requirements={"incubator" = "\d+"})
-     * @REST\Get("/{incubator}/from/{start}/until/{end}.{_format}",
+     * @REST\Get("/{incubator}/from/{start}/until/{end}",
      *     defaults={"_format" = "html"}, requirements={"incubator" = "\d+"})
-     * @REST\Get("/{incubator}/from/{start}.{_format}",
+     * @REST\Get("/{incubator}/from/{start}",
      *     defaults={"_format" = "html"}, requirements={"incubator" = "\d+"})
      *
      * @ParamConverter("incubator", class="BluemesaFliesBundle:Incubator", options={"id" = "incubator"})

@@ -1,0 +1,6 @@
+{% extends "BluemesaFliesBundle:Stock:edit.html.twig" %}
+
+{% block modal_header %}New stock{% endblock modal_header %}
+{% block modal_footer %}
+    {{ f.buttons(form.vars.value, 'bluemesa_flies_stock') }}
+{% endblock modal_footer %}

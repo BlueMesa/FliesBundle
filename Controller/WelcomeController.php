@@ -18,17 +18,20 @@
 
 namespace Bluemesa\Bundle\FliesBundle\Controller;
 
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 
-use Bluemesa\Bundle\CoreBundle\Controller\AbstractController;
 use Bluemesa\Bundle\AclBundle\Controller\SecureController;
-
+use Bluemesa\Bundle\CoreBundle\Controller\AbstractController;
 use Bluemesa\Bundle\FliesBundle\Filter\VialFilter;
 use Bluemesa\Bundle\FliesBundle\Repository\VialRepository;
+use FOS\RestBundle\Controller\Annotations as REST;
+
 
 /**
  * Default controller for FliesBundle
+ *
+ * @REST\Prefix("/flies")
+ * @REST\NamePrefix("bluemesa_flies_welcome_")
  *
  * @author Radoslaw Kamil Ejsmont <radoslaw@ejsmont.net>
  */
@@ -39,7 +42,7 @@ class WelcomeController extends AbstractController
     /**
      * Print panel
      *
-     * @Route("/")
+     * @REST\Get("", defaults={"_format" = "html"}))
      * @Template()
      *
      * @return \Symfony\Component\HttpFoundation\Response

@@ -118,10 +118,6 @@ class Stock extends Entity implements
     {
         $this->verified = false;
         $this->vials = new ArrayCollection();
-        $this->addVial(new StockVial());
-        foreach ($this->getVials() as $vial) {
-            $vial->setStock($this);
-        }
     }
 
     /**

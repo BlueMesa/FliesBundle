@@ -1,137 +1,208 @@
 <?php
 
 /*
- * Copyright 2011 Radoslaw Kamil Ejsmont <radoslaw@ejsmont.net>
+ * This file is part of the FliesBundle.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) 2017 BlueMesa LabDB Contributors <labdb@bluemesa.eu>
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace Bluemesa\Bundle\FliesBundle\Controller;
 
+use Bluemesa\Bundle\CoreBundle\Controller\Annotations\Paginate;
+use Bluemesa\Bundle\CrudBundle\Controller\Annotations as CRUD;
+use Bluemesa\Bundle\CrudBundle\Controller\CrudControllerTrait;
+use FOS\RestBundle\Controller\Annotations as REST;
+use FOS\RestBundle\View\View;
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
 use JMS\SecurityExtraBundle\Annotation\SatisfiesParentSecurityPolicy;
 
-use Doctrine\Common\Collections\ArrayCollection;
-
-use Bluemesa\Bundle\AclBundle\Controller\SecureCRUDController;
-use Bluemesa\Bundle\CoreBundle\Filter\RedirectFilterInterface;
-
 use Bluemesa\Bundle\FliesBundle\Doctrine\VialManager;
 use Bluemesa\Bundle\FliesBundle\Label\PDFLabel;
-
-use Bluemesa\Bundle\FliesBundle\Form\StockType;
-use Bluemesa\Bundle\FliesBundle\Form\StockNewType;
 
 use Bluemesa\Bundle\FliesBundle\Entity\Stock;
 use Bluemesa\Bundle\FliesBundle\Entity\StockVial;
 
-use Bluemesa\Bundle\FliesBundle\Filter\StockFilter;
-use Bluemesa\Bundle\FliesBundle\Filter\VialFilter;
 
 /**
  * StockController class
  *
- * @Route("/stocks")
- *
  * @author Radoslaw Kamil Ejsmont <radoslaw@ejsmont.net>
+ *
+ * @REST\Prefix("/flies/stocks")
+ * @REST\NamePrefix("bluemesa_flies_stock_")
+ * @CRUD\Controller()
  */
-class StockController extends SecureCRUDController
+class StockController extends Controller
 {
-    const ENTITY_CLASS = 'Bluemesa\Bundle\FliesBundle\Entity\Stock';
-    const ENTITY_NAME = 'stock|stocks';
-    
-    
+    use CrudControllerTrait;
+
     /**
-     * {@inheritdoc}
+     * @CRUD\Action("index")
+     * @CRUD\Filter("Bluemesa\Bundle\FliesBundle\Filter\StockFilter",
+     *     redirectRoute="bluemesa_flies_stock_index_type_sort")
+     * @REST\View()
+     * @REST\Get("", defaults={"_format" = "html"}))
+     * @REST\Get("/{access}", name="_access",
+     *     requirements={"access" = "mtnt|private|shared|public"},
+     *     defaults={"_format" = "html"})
+     * @REST\Get("/{access}/sort/{sort}/{order}", name="_sort",
+     *     requirements={"access" = "mtnt|private|shared|public"},
+     *     defaults={"sort" = "name", "order" = "asc", "_format" = "html"})
+     * @Paginate(25)
+     *
+     * @param  Request     $request
+     * @return View
      */
-    protected function getCreateForm()
+    public function indexAction(Request $request)
     {
-        return StockNewType::class;
+        return $this->getCrudHandler()->handle($request);
     }
 
     /**
-     * {@inheritdoc}
+     * @CRUD\Action("delete")
+     * @REST\View()
+     * @REST\Route("/{id}/delete", methods={"DELETE", "POST"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     * @REST\Delete("/{id}", name="_rest", requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *
+     * @param  Request     $request
+     * @return View
      */
-    protected function getEditForm()
+    public function deleteAction(Request $request)
     {
-        return StockType::class;
+        return $this->getCrudHandler()->handle($request);
     }
 
     /**
-     * List stocks
+     * @CRUD\Action("show")
+     * @REST\View()
+     * @REST\Get("/{id}", requirements={"id"="\d+"}, defaults={"_format" = "html"})
      *
-     * @Route("/")
-     * @Route("/list/{access}", defaults={"access" = "owned"})
-     * @Route("/list/{access}/sort/{sort}/{order}", defaults={"access" = "mtnt", "sort" = "name", "order" = "asc"})
-     * @Template()
-     * @SatisfiesParentSecurityPolicy
-     *
-     * @param  \Symfony\Component\HttpFoundation\Request   $request
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @param  Request  $request
+     * @return View
      */
-    public function listAction(Request $request)
+    public function showAction(Request $request)
     {
-        return parent::listAction($request);
+        return $this->getCrudHandler()->handle($request);
     }
-    
+
     /**
-     * Show stock
+     * @CRUD\Action("new")
+     * @REST\View()
+     * @REST\Route("/new", methods={"GET", "PUT"}, defaults={"_format" = "html"})
+     * @REST\Put("", name="_rest", defaults={"_format" = "html"})
      *
-     * @Route("/show/{id}")
-     * @Template()
-     *
-     * @param  \Symfony\Component\HttpFoundation\Request           $request
-     * @param  mixed                                               $id
-     * @return \Symfony\Component\HttpFoundation\Response | array
+     * @param  Request     $request
+     * @return View
      */
-    public function showAction(Request $request, $id)
+    public function newAction(Request $request)
     {
-        /** @var Stock $stock */
-        $stock = $this->getEntity($id);
-        $response = parent::showAction($request, $stock);
-        $om = $this->getObjectManager();
-        
-        $filter = new VialFilter(null, $this->getAuthorizationChecker(), $this->getTokenStorage());
-        $filter->setAccess('private');
-        
-        $myVials = $om->getRepository('Bluemesa\Bundle\FliesBundle\Entity\StockVial')
-                      ->findLivingVialsByStock($stock, $filter);
+        $view = $this->getCrudHandler()->handle($request);
+        dump($view);
+        return $view;
+    }
 
-        $small = new ArrayCollection();
-        $medium = new ArrayCollection();
-        $large = new ArrayCollection();
+    /**
+     * @CRUD\Action("edit")
+     * @REST\View()
+     * @REST\Route("/{id}/edit", methods={"GET", "POST"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     * @REST\Post("/{id}", name="_rest", requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *
+     * @param  Request     $request
+     * @return View
+     */
+    public function editAction(Request $request)
+    {
+        return $this->getCrudHandler()->handle($request);
+    }
 
-        /** @var StockVial $vial */
-        foreach ($myVials as $vial) {
-            switch ($vial->getSize()) {
-                case 'small':
-                    $small->add($vial);
-                    break;
-                case 'medium':
-                    $medium->add($vial);
-                    break;
-                case 'large':
-                    $large->add($vial);
-                    break;
-            }
+    /**
+     * @REST\View()
+     * @REST\Route("/{id}/permissions", methods={"GET", "POST"},
+     *     requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *
+     * @param  Request     $request
+     * @return View
+     */
+    public function permissionsAction(Request $request)
+    {
+        return View::create($this->createNotFoundException());
+    }
+
+    /**
+     * @REST\Get("/_ajax/flybase/stock", defaults={"_format" = "json"}, requirements={"_format" = "json"})
+     * @REST\RequestParam(name="stock")
+     * @REST\RequestParam(name="vendor")
+     * @REST\View()
+     *
+     * @param  Request $request
+     * @return View
+     */
+    public function ajaxFlybaseStockAction(Request $request)
+    {
+        $stock = $request->query->get('stock');
+        $vendor = $request->query->get('vendor', '');
+        $sql = <<<FLYBASE_SQL
+SELECT stockcollection.uniquename AS stock_center,
+    stock.name AS stock_id,
+    'http://flybase.org/reports/' || stock.uniquename || '.html' AS stock_link,
+    genotype.uniquename AS stock_genotype
+    FROM stock
+    JOIN stock_genotype on stock.stock_id = stock_genotype.stock_id
+    JOIN genotype on stock_genotype.genotype_id = genotype.genotype_id
+    JOIN stockcollection_stock on stock.stock_id = stockcollection_stock.stock_id
+    JOIN stockcollection on stockcollection_stock.stockcollection_id = stockcollection.stockcollection_id
+    WHERE stock.name ILIKE :stock
+FLYBASE_SQL;
+        if ($vendor !== '') {
+            $sql .= ' AND stockcollection.uniquename ILIKE :vendor';
         }
+        $sql .= ' ORDER BY char_length(stock.name), stock.name LIMIT 10';
+        $conn = $this->get('doctrine.dbal.flybase_connection');
+        $stmt = $conn->prepare($sql);
+        $stmt->bindValue("stock", "%" . $stock . "%");
+        if ($vendor !== '') {
+            $stmt->bindValue("vendor", "%" . $vendor . "%");
+        }
+        $stmt->execute();
+        $stocks = $stmt->fetchAll();
 
-        $vials = array('small' => $small, 'medium' => $medium, 'large' => $large);
-
-        return is_array($response) ? array_merge($response, $vials) : $response;
+        return new View($stocks);
     }
+
+    /**
+     * @REST\Get("/_ajax/flybase/vendor", defaults={"_format" = "json"}, requirements={"_format" = "json"})
+     * @REST\RequestParam(name="vendor")
+     * @REST\View()
+     *
+     * @param  Request       $request
+     * @return View
+     */
+    public function ajaxFlybaseVendorAction(Request $request)
+    {
+        $vendor = $request->query->get('vendor');
+        $sql = <<<FLYBASE_SQL
+SELECT stockcollection.uniquename AS stock_center
+    FROM stockcollection
+    WHERE stockcollection.uniquename ILIKE :vendor
+FLYBASE_SQL;
+        $conn = $this->get('doctrine.dbal.flybase_connection');
+        $stmt = $conn->prepare($sql);
+        $stmt->bindValue("vendor", "%" . $vendor . "%");
+        $stmt->execute();
+        $vendors = $stmt->fetchAll();
+
+        return new View($vendors);
+    }
+
+
+    /* TODO: modify methods below */
+
 
     /**
      * Create stock
@@ -201,35 +272,6 @@ class StockController extends SecureCRUDController
 
         return array('form' => $form->createView(), 'existingStock' => $existingStock);
     }
-
-    /**
-     * Edit entity
-     *
-     * @Route("/edit/{id}")
-     * @Template()
-     *
-     * @param  \Symfony\Component\HttpFoundation\Request           $request
-     * @param  mixed                                               $id
-     * @return \Symfony\Component\HttpFoundation\Response | array
-     */
-    public function editAction(Request $request, $id)
-    {
-        $response = parent::editAction($request, $id);
-        
-        if (is_array($response)) {
-            $om = $this->getObjectManager();
-            $filter = new VialFilter(null, $this->getAuthorizationChecker(), $this->getTokenStorage());
-            $filter->setAccess('insecure');
-            $stock = isset($response['form']) ? $response['form']->vars['value'] : $this->getEntity($id);
-            $used = $om->getRepository('Bluemesa\Bundle\FliesBundle\Entity\StockVial')
-                        ->getUsedVialCountByStock($stock, $filter);
-            $canDelete = $this->getAuthorizationChecker()->isGranted('ROLE_ADMIN') || ($used == 0);
-            
-            return array_merge($response, array('can_delete' => $canDelete));
-        }
-        
-        return $response;
-    }
     
     /**
      * Submit print job
@@ -257,42 +299,5 @@ class StockController extends SecureCRUDController
 
             return false;
         }
-    }
-    
-    /**
-     * {@inheritdoc}
-     */
-    protected function getFilterRedirect(Request $request, RedirectFilterInterface $filter)
-    {
-        $currentRoute = $request->attributes->get('_route');
-        
-        if ($currentRoute == '') {
-            $route = 'bluemesa_flies_stock_list_1';
-        } else {
-            $pieces = explode('_',$currentRoute);
-            if (! is_numeric($pieces[count($pieces) - 1])) {
-                $pieces[] = '2';
-            }
-            $route = ($currentRoute == 'default') ? 'bluemesa_flies_stock_list_1' : implode('_', $pieces);
-        }
-
-        $routeParameters = ($filter instanceof StockFilter) ?
-            array(
-                'access' => $filter->getAccess(),
-                'sort' => $filter->getSort(),
-                'order' => $filter->getOrder()) :
-            array();
-        
-        $url = $this->generateUrl($route, $routeParameters);
-        
-        return $this->redirect($url);
-    }
-    
-    /**
-     * {@inheritdoc}
-     */
-    protected function getFilter(Request $request)
-    {
-        return new StockFilter($request, $this->getAuthorizationChecker(), $this->getTokenStorage());
     }
 }

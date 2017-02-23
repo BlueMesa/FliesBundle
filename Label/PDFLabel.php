@@ -29,7 +29,7 @@ use PHP_IPP\IPP\CupsPrintIPP;
 /**
  * Handle PDF Label generation
  *
- * @DI\Service("bluemesafolks.pdflabel")
+ * @DI\Service("bluemesa.flies.pdf_label")
  * 
  * @author Radoslaw Kamil Ejsmont <radoslaw@ejsmont.net>
  */

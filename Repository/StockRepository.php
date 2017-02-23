@@ -34,6 +34,8 @@ use Bluemesa\Bundle\FliesBundle\Filter\StockFilter;
  */
 class StockRepository extends SearchableRepository
 {
+    /* TODO: Create indexQuery methods */
+
     /**
      * {@inheritdoc}
      */

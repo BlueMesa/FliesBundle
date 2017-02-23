@@ -76,7 +76,7 @@
                   data-placement="bottom" data-container="#span_{{ uuid }}"
                   data-delay="500" data-link="{{ path('bluemesa_flies_ajax_popover')}}"
                   data-type="vial" data-id="{{ item.id }}">
-              <a href="{{ path(route, { 'id': item.id }) }}">{{ item }}</a>
+              <a href="{#{{ path(route, { 'id': item.id }) }}#}">{{ item }}</a>
             </span>
         {% else %}{{ item }}{% endif %}
         {% endspaceless %}</li>

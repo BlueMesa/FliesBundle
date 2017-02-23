@@ -12,16 +12,19 @@
     <div class="collapse navbar-collapse navbar-ex1-collapse">
       <ul class="nav navbar-nav">
         <li class="dropdown dropdown-split-left">
-          <a href="{{ path('bluemesa_flies_stock_list') }}">Stocks</a>
+          <a href="{{ path('bluemesa_flies_stock_index') }}">Stocks</a>
           <ul class="dropdown-menu menu_level_1">
-            <li><a href="{{ path('bluemesa_flies_stock_list') }}">My stocks</a></li>
-            <li><a href="{{ path('bluemesa_flies_stock_list_1',{ 'access': 'private' }) }}">Stocks I created</a></li>
-            <li><a href="{{ path('bluemesa_flies_stock_list_1',{ 'access': 'public' }) }}">Public stocks</a></li>
+            <li><a href="{{ path('bluemesa_flies_stock_index') }}">My stocks</a></li>
+            <li><a href="{{ path('bluemesa_flies_stock_index_access',{ 'access': 'private' }) }}">Stocks I created</a></li>
+            <li><a href="{{ path('bluemesa_flies_stock_index_access',{ 'access': 'public' }) }}">Public stocks</a></li>
             <li class="divider"></li>
+            {#
             <li><a href="{{ path('bluemesa_flies_stock_create') }}">New stock</a></li>
             <li><a href="{{ path('bluemesa_flies_vial_expand') }}">Expand stock</a></li>
+            #}
           </ul>
         </li>
+        {#
         <li class="dropdown dropdown-split-right">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-caret-down"></i></a>
         </li>
@@ -99,6 +102,7 @@
             <li><a href="{{ path('default') }}">Other databases</a></li>
           </ul>
         </li>
+        #}
         {% if app.user is not empty %}
         <li class="visible-xs">
           <a href="{{ path('logout') }}">
@@ -133,7 +137,9 @@
         </li>
       </ul>
       {% endif %}
+      {#
       {{ render(controller('BluemesaFliesBundle:Search:search')) }}
+      #}
     </div>
   </div>
 </nav>
