@@ -65,6 +65,7 @@ class VialListener
      */
     public function __construct(VialManager $manager, SessionInterface $session, PDFLabel $pdf)
     {
+        $this->manager = $manager;
         $this->session = $session;
         $this->pdf = $pdf;
     }
@@ -93,8 +94,6 @@ class VialListener
      */
     private function submitPrintJob($count = 1)
     {
-        return true;
-
         $jobStatus = $this->pdf->printPDF();
         $result = $jobStatus == 'successfull-ok';
 

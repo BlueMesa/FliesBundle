@@ -466,6 +466,7 @@ $(document).ready(function() {
       var $this = $(this);
       var url = $this.data('link');
       $this.select2({
+        theme: 'bootstrap',
         ajax: {
           url: url,
           dataType: 'json',

@@ -16,8 +16,9 @@ namespace Bluemesa\Bundle\FliesBundle\Event;
 use Bluemesa\Bundle\FliesBundle\Entity\Vial;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Symfony\Component\EventDispatcher\Event;
 
-class VialEvent
+class VialEvent extends Event
 {
     /**
      * @var Collection

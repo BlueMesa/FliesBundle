@@ -53,6 +53,13 @@ use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
  *         "priority" = 100
  *     }
  * )
+ * @DI\Tag("kernel.event_listener",
+ *     attributes = {
+ *         "event" = "bluemesa.controller.new_success",
+ *         "method" = "onNewSuccess",
+ *         "priority" = 100
+ *     }
+ * )
  *
  * @author Radoslaw Kamil Ejsmont <radoslaw@ejsmont.net>
  */
@@ -193,6 +200,17 @@ class StockListener
         for ($i=0; $i<$number; $i++) {
             $stock->addVial(clone $vial);
         }
+    }
+
+    /**
+     * @param NewActionEvent $event
+     */
+    public function onNewSuccess(NewActionEvent $event)
+    {
+        $stock = $event->getEntity();
+        if (! $stock instanceof Stock) {
+            return;
+        };
 
         $event = new VialEvent($stock->getVials());
         $this->dispatcher->dispatch(FlyEvents::VIALS_CREATED, $event);
