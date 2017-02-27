@@ -142,6 +142,7 @@ class StockType extends AbstractType
                     )
                     ->add('number', NumberType::class, array(
                             'label'       => 'Number of vials',
+                            'data'        => 1,
                             'mapped'      => false,
                             'constraints' => array(new Range(array('min' => 1)))
                         )

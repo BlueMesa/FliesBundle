@@ -18,6 +18,7 @@ use Bluemesa\Bundle\CrudBundle\Controller\Annotations as CRUD;
 use Bluemesa\Bundle\CrudBundle\Controller\CrudControllerTrait;
 use FOS\RestBundle\Controller\Annotations as REST;
 use FOS\RestBundle\View\View;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -38,9 +39,12 @@ class StockController extends Controller
 
 
     /**
+     * @Security("has_role('ROLE_USER')")
+     *
      * @CRUD\Action("index")
      * @CRUD\Filter("Bluemesa\Bundle\FliesBundle\Filter\StockFilter",
      *     redirectRoute="bluemesa_flies_stock_index_type_sort")
+     *
      * @REST\View()
      * @REST\Get("", defaults={"_format" = "html"}))
      * @REST\Get("/{access}", name="_access",
@@ -49,6 +53,7 @@ class StockController extends Controller
      * @REST\Get("/{access}/sort/{sort}/{order}", name="_sort",
      *     requirements={"access" = "mtnt|private|shared|public"},
      *     defaults={"sort" = "name", "order" = "asc", "_format" = "html"})
+     *
      * @Paginate(25)
      *
      * @param  Request     $request
@@ -60,21 +65,10 @@ class StockController extends Controller
     }
 
     /**
-     * @CRUD\Action("delete")
-     * @REST\View()
-     * @REST\Route("/{id}/delete", methods={"GET", "DELETE", "POST"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
-     * @REST\Delete("/{id}", name="_rest", requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     * @Security("has_role('ROLE_ADMIN') or is_granted('VIEW', entity)")
      *
-     * @param  Request     $request
-     * @return View
-     */
-    public function deleteAction(Request $request)
-    {
-        return $this->getCrudHandler()->handle($request);
-    }
-
-    /**
      * @CRUD\Action("show")
+     *
      * @REST\View()
      * @REST\Get("/{id}", requirements={"id"="\d+"}, defaults={"_format" = "html"})
      *
@@ -87,7 +81,10 @@ class StockController extends Controller
     }
 
     /**
+     * @Security("has_role('ROLE_USER')")
+     *
      * @CRUD\Action("new")
+     *
      * @REST\View()
      * @REST\Route("/new", methods={"GET", "PUT"}, defaults={"_format" = "html"})
      * @REST\Put("", name="_rest", defaults={"_format" = "html"})
@@ -101,7 +98,10 @@ class StockController extends Controller
     }
 
     /**
+     * @Security("has_role('ROLE_ADMIN') or is_granted('EDIT', entity)")
+     *
      * @CRUD\Action("edit")
+     *
      * @REST\View()
      * @REST\Route("/{id}/edit", methods={"GET", "POST"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
      * @REST\Post("/{id}", name="_rest", requirements={"id"="\d+"}, defaults={"_format" = "html"})
@@ -115,7 +115,27 @@ class StockController extends Controller
     }
 
     /**
+     * @Security("has_role('ROLE_ADMIN') or is_granted('DELETE', entity)")
+     *
+     * @CRUD\Action("delete")
+     *
+     * @REST\View()
+     * @REST\Route("/{id}/delete", methods={"GET", "DELETE", "POST"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     * @REST\Delete("/{id}", name="_rest", requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *
+     * @param  Request     $request
+     * @return View
+     */
+    public function deleteAction(Request $request)
+    {
+        return $this->getCrudHandler()->handle($request);
+    }
+
+    /**
+     * @Security("has_role('ROLE_ADMIN') or is_granted('MASTER', entity)")
+     *
      * @ACL\Action("permissions")
+     *
      * @REST\View()
      * @REST\Route("/{id}/edit/permissions", methods={"GET", "POST"},
      *     requirements={"id"="\d+"}, defaults={"_format" = "html"})

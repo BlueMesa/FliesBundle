@@ -2,6 +2,7 @@
 {% use "BluemesaSiteTemplateBundle:Show:modal.html.twig" %}
 {% import "BluemesaSiteTemplateBundle:Macros:show.html.twig" as s %}
 {% import 'BluemesaSiteTemplateBundle:Macros:status.html.twig' as status %}
+{% import _self as v %}
 
 {% block modal_header %}
   Stock {{ entity }}
@@ -11,7 +12,7 @@
 {% block modal_body %}
   {{ s.row("Genotype", entity.genotype) }}
   {{ s.row("Source cross", entity.sourceCross , 'bluemesa_flies_crossvial_show', null, 'vial') }}
-  {{ _self.vials("<strong>Vials</strong>", entity.livingVials, 'bluemesa_flies_stockvial_show') }}
+  {{ v.vials("<strong>Vials</strong>", entity.livingVials, 'bluemesa_flies_stockvial_show') }}
   {{ s.user("Created by", owner) }}
   {{ s.row("Notes", entity.notes) }}
   <div class="form-group">
@@ -46,12 +47,12 @@
     </div>
   </div>
   <div class="form-group">
-    <a class="control-label col-sm-3 collapse-toggle" data-toggle="collapse" href="#myvials"><strong>My vials</strong></a>
+    <a class="control-label col-sm-3 collapse-toggle" data-toggle="collapse" href="#my_vials"><strong>My vials</strong></a>
   </div>
-  <div id="myvials" class="collapse">
-    {{ _self.vials('Small',small,'bluemesa_flies_stockvial_show') }}
-    {{ _self.vials('Medium',medium,'bluemesa_flies_stockvial_show') }}
-    {{ _self.vials('Large',large,'bluemesa_flies_stockvial_show') }}
+  <div id="my_vials" class="collapse">
+    {{ v.vials('Small',small,'bluemesa_flies_stockvial_show') }}
+    {{ v.vials('Medium',medium,'bluemesa_flies_stockvial_show') }}
+    {{ v.vials('Large',large,'bluemesa_flies_stockvial_show') }}
   </div>
 {% endblock modal_body %}
 

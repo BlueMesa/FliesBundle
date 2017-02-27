@@ -12,6 +12,7 @@
 
 namespace Bluemesa\Bundle\FliesBundle\EventListener;
 
+use Bluemesa\Bundle\CrudBundle\Event\CrudControllerEvents;
 use Bluemesa\Bundle\CrudBundle\Event\EditActionEvent;
 use Bluemesa\Bundle\CrudBundle\Event\NewActionEvent;
 use Bluemesa\Bundle\CrudBundle\Event\ShowActionEvent;
@@ -25,6 +26,7 @@ use Bluemesa\Bundle\FliesBundle\Repository\StockVialRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use JMS\DiExtraBundle\Annotation as DI;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
@@ -32,38 +34,11 @@ use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
 
 /**
  * @DI\Service("bluemesa.flies.listener.stock")
- * @DI\Tag("kernel.event_listener",
- *     attributes = {
- *         "event" = "bluemesa.controller.show_completed",
- *         "method" = "onShowCompleted",
- *         "priority" = 100
- *     }
- * )
- * @DI\Tag("kernel.event_listener",
- *     attributes = {
- *         "event" = "bluemesa.controller.edit_completed",
- *         "method" = "onEditCompleted",
- *         "priority" = 100
- *     }
- * )
- * @DI\Tag("kernel.event_listener",
- *     attributes = {
- *         "event" = "bluemesa.controller.new_submitted",
- *         "method" = "onNewSubmitted",
- *         "priority" = 100
- *     }
- * )
- * @DI\Tag("kernel.event_listener",
- *     attributes = {
- *         "event" = "bluemesa.controller.new_success",
- *         "method" = "onNewSuccess",
- *         "priority" = 100
- *     }
- * )
+ * @DI\Tag("kernel.event_subscriber")
  *
  * @author Radoslaw Kamil Ejsmont <radoslaw@ejsmont.net>
  */
-class StockListener
+class StockListener implements EventSubscriberInterface
 {
     /**
      * @var ObjectManagerRegistry
@@ -107,6 +82,20 @@ class StockListener
         $this->authorizationChecker = $authorizationChecker;
         $this->tokenStorage = $tokenStorage;
         $this->dispatcher = $dispatcher;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public static function getSubscribedEvents()
+    {
+        return array(
+            CrudControllerEvents::SHOW_COMPLETED => array('onShowCompleted', 100),
+            CrudControllerEvents::EDIT_COMPLETED => array('onEditCompleted', 100),
+            CrudControllerEvents::NEW_SUBMITTED => array('onNewSubmitted', 100),
+            CrudControllerEvents::NEW_SUCCESS => array('onNewSuccess', 100),
+            CrudControllerEvents::NEW_COMPLETED => array('onNewCompleted', 100)
+        );
     }
 
     /**
@@ -222,7 +211,7 @@ class StockListener
     public function onNewCompleted(NewActionEvent $event)
     {
         $stock = $event->getEntity();
-        if (!$stock instanceof Stock) {
+        if ((!$stock instanceof Stock)||($stock->getId() !== null)||(empty($stock->getName()))) {
             return;
         };
 
@@ -231,10 +220,8 @@ class StockListener
             return;
         }
 
-        if ($stock->getId() === null) {
-            $repository = $this->registry->getRepository(Stock::class);
-            $existing = $repository->findOneBy(array('name' => $stock->getName()));
-            $view->setTemplateData(array_merge($view->getTemplateData(), array('existing_stock' => $existing)));
-        }
+        $repository = $this->registry->getRepository(Stock::class);
+        $existing = $repository->findOneBy(array('name' => $stock->getName()));
+        $view->setTemplateData(array_merge($view->getTemplateData(), array('existing_stock' => $existing)));
     }
 }
