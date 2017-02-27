@@ -11,6 +11,8 @@
 
 namespace Bluemesa\Bundle\FliesBundle\Controller;
 
+use Bluemesa\Bundle\AclBundle\Controller\AclControllerTrait;
+use Bluemesa\Bundle\AclBundle\Controller\Annotations as ACL;
 use Bluemesa\Bundle\CoreBundle\Controller\Annotations\Paginate;
 use Bluemesa\Bundle\CrudBundle\Controller\Annotations as CRUD;
 use Bluemesa\Bundle\CrudBundle\Controller\CrudControllerTrait;
@@ -31,7 +33,9 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class StockController extends Controller
 {
+    use AclControllerTrait;
     use CrudControllerTrait;
+
 
     /**
      * @CRUD\Action("index")
@@ -58,7 +62,7 @@ class StockController extends Controller
     /**
      * @CRUD\Action("delete")
      * @REST\View()
-     * @REST\Route("/{id}/delete", methods={"DELETE", "POST"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     * @REST\Route("/{id}/delete", methods={"GET", "DELETE", "POST"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
      * @REST\Delete("/{id}", name="_rest", requirements={"id"="\d+"}, defaults={"_format" = "html"})
      *
      * @param  Request     $request
@@ -111,8 +115,9 @@ class StockController extends Controller
     }
 
     /**
+     * @ACL\Action("permissions")
      * @REST\View()
-     * @REST\Route("/{id}/permissions", methods={"GET", "POST"},
+     * @REST\Route("/{id}/edit/permissions", methods={"GET", "POST"},
      *     requirements={"id"="\d+"}, defaults={"_format" = "html"})
      *
      * @param  Request     $request
@@ -120,7 +125,7 @@ class StockController extends Controller
      */
     public function permissionsAction(Request $request)
     {
-        return View::create($this->createNotFoundException());
+        return $this->getAclHandler()->handle($request);
     }
 
     /**

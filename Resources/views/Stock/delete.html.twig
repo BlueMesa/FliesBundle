@@ -1,7 +1,8 @@
 {% extends "BluemesaFliesBundle:Stock:layout.html.twig" %}
-{% use "BluemesaSiteTemplateBundle:Delete:modal.html.twig" %}
+{% use "BluemesaSiteTemplateBundle:Form:form.html.twig" %}
 {% import "BluemesaSiteTemplateBundle:Macros:delete.html.twig" as d %}
 
+{% block modal_class %}modal-danger{% endblock modal_class %}
 {% block modal_header %}Delete stock {{ entity }}{% endblock modal_header %}
 
 {% block modal_body %}
