@@ -66,9 +66,7 @@ class StockController extends Controller
 
     /**
      * @Security("has_role('ROLE_ADMIN') or is_granted('VIEW', entity)")
-     *
      * @CRUD\Action("show")
-     *
      * @REST\View()
      * @REST\Get("/{id}", requirements={"id"="\d+"}, defaults={"_format" = "html"})
      *
@@ -82,12 +80,10 @@ class StockController extends Controller
 
     /**
      * @Security("has_role('ROLE_USER')")
-     *
      * @CRUD\Action("new")
-     *
      * @REST\View()
-     * @REST\Route("/new", methods={"GET", "PUT"}, defaults={"_format" = "html"})
-     * @REST\Put("", name="_rest", defaults={"_format" = "html"})
+     * @REST\Route("/new", methods={"GET", "POST"}, defaults={"_format" = "html"})
+     * @REST\Post("", name="_rest", defaults={"_format" = "html"})
      *
      * @param  Request     $request
      * @return View
@@ -99,12 +95,10 @@ class StockController extends Controller
 
     /**
      * @Security("has_role('ROLE_ADMIN') or is_granted('EDIT', entity)")
-     *
      * @CRUD\Action("edit")
-     *
      * @REST\View()
-     * @REST\Route("/{id}/edit", methods={"GET", "POST"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
-     * @REST\Post("/{id}", name="_rest", requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     * @REST\Route("/{id}/edit", methods={"GET", "PUT"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     * @REST\Put("/{id}", name="_rest", requirements={"id"="\d+"}, defaults={"_format" = "html"})
      *
      * @param  Request     $request
      * @return View
@@ -116,11 +110,9 @@ class StockController extends Controller
 
     /**
      * @Security("has_role('ROLE_ADMIN') or is_granted('DELETE', entity)")
-     *
      * @CRUD\Action("delete")
-     *
      * @REST\View()
-     * @REST\Route("/{id}/delete", methods={"GET", "DELETE", "POST"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     * @REST\Route("/{id}/delete", methods={"GET", "DELETE"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
      * @REST\Delete("/{id}", name="_rest", requirements={"id"="\d+"}, defaults={"_format" = "html"})
      *
      * @param  Request     $request
@@ -133,11 +125,9 @@ class StockController extends Controller
 
     /**
      * @Security("has_role('ROLE_ADMIN') or is_granted('MASTER', entity)")
-     *
      * @ACL\Action("permissions")
-     *
      * @REST\View()
-     * @REST\Route("/{id}/edit/permissions", methods={"GET", "POST"},
+     * @REST\Route("/{id}/permissions", methods={"GET", "PUT"},
      *     requirements={"id"="\d+"}, defaults={"_format" = "html"})
      *
      * @param  Request     $request

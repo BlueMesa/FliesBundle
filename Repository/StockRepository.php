@@ -34,40 +34,19 @@ use Bluemesa\Bundle\FliesBundle\Filter\StockFilter;
  */
 class StockRepository extends SearchableRepository
 {
-    /* TODO: Create indexQuery methods */
-
     /**
      * {@inheritdoc}
      */
-    public function getListQuery(ListFilterInterface $filter = null)
+    public function createIndexQueryBuilder()
     {
-        $access = ($filter instanceof SecureFilterInterface) ? $filter->getAccess() : null;
-        $user = ($filter instanceof SecureFilterInterface) ? $filter->getUser() : null;
-        
-        if ($access == 'mtnt') {
-            $qb = $this->getListQueryBuilder($filter);
-            $permissions = array('OWNER');
-            
-            return $this->getAclFilter()->apply($qb, $permissions, $user, 'v');
-        } else {
-            
-            return parent::getListQuery($filter);
-        }
-    }
+        $qb = parent::createIndexQueryBuilder();
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function getListQueryBuilder(ListFilterInterface $filter = null)
-    {
-        $qb = $this->createQueryBuilder('e');
-        
         $date = new \DateTime();
         $date->sub(new \DateInterval('P2M'));
-        
-        if ($filter instanceof SortFilterInterface) {
-            $order = ($filter->getOrder() == 'desc') ? 'DESC' : 'ASC';
-            switch ($filter->getSort()) {
+
+        if ($this->filter instanceof SortFilterInterface) {
+            $order = ($this->filter->getOrder() == 'desc') ? 'DESC' : 'ASC';
+            switch ($this->filter->getSort()) {
                 case 'name':
                     $qb->orderBy('e.name', $order);
                     break;
@@ -76,25 +55,22 @@ class StockRepository extends SearchableRepository
                     break;
                 case 'vial':
                     $qb->addSelect('count(cntv) AS HIDDEN vialcount')
-                       ->leftJoin('e.vials','cntv')
-                       ->andWhere('cntv.setupDate > :date')
-                       ->andWhere('cntv.trashed = false')
-                       ->setParameter('date', $date->format('Y-m-d'))
-                       ->groupBy('e.id')
-                       ->orderBy('vialcount', $order);
+                        ->leftJoin('e.vials','cntv')
+                        ->andWhere('cntv.setupDate > :date')
+                        ->andWhere('cntv.trashed = false')
+                        ->setParameter('date', $date->format('Y-m-d'))
+                        ->groupBy('e.id')
+                        ->orderBy('vialcount', $order);
                     break;
             }
         }
-        
-        $access = ($filter instanceof StockFilter) ? $filter->getAccess() : null;
-        
-        if ($access == 'mtnt') {
 
+        if (($this->filter instanceof SecureFilterInterface)&&($this->filter->getAccess() == 'mtnt')) {
             $qb->distinct()
-               ->join('e.vials','v')
-               ->andWhere('v.setupDate > :date')
-               ->andWhere('v.trashed = false')
-               ->setParameter('date', $date->format('Y-m-d'));
+                ->join('e.vials','v')
+                ->andWhere('v.setupDate > :date')
+                ->andWhere('v.trashed = false')
+                ->setParameter('date', $date->format('Y-m-d'));
         }
 
         return $qb;
@@ -103,43 +79,15 @@ class StockRepository extends SearchableRepository
     /**
      * {@inheritdoc}
      */
-    public function getCountQuery(ListFilterInterface $filter = null)
+    protected function secureQuery($qb, $query)
     {
-        $access = ($filter instanceof StockFilter) ? $filter->getAccess() : null;
-        $user = ($filter instanceof SecureFilterInterface) ? $filter->getUser() : null;
-        
-        if ($access == 'mtnt') {
-            $qb = $this->getCountQueryBuilder($filter);
+        if (($this->filter instanceof SecureFilterInterface)&&($this->filter->getAccess() == 'mtnt')) {
             $permissions = array('OWNER');
-            
-            return $this->getAclFilter()->apply($qb, $permissions, $user, 'v');
-        } else {
-            
-            return parent::getCountQuery($filter);
-        }
-    }
 
-    /**
-     * {@inheritdoc}
-     */
-    protected function getCountQueryBuilder(ListFilterInterface $filter = null)
-    {
-        $qb = $this->createQueryBuilder('e')
-                   ->select('count(DISTINCT e.id)');
-        
-        $access = ($filter instanceof StockFilter) ? $filter->getAccess() : null;
-        
-        if ($access == 'mtnt') {
-            $date = new \DateTime();
-            $date->sub(new \DateInterval('P2M'));
-
-            return $qb->join('e.vials','v')
-                      ->andWhere('v.setupDate > :date')
-                      ->andWhere('v.trashed = false')
-                      ->setParameter('date', $date->format('Y-m-d'));
+            return $this->getAclFilter()->apply($qb, $permissions, $this->filter->getUser(), 'v');
         }
 
-        return $qb;
+        return parent::secureQuery($qb, $query);
     }
 
     /**

@@ -1,27 +1,24 @@
 <?php
 
 /*
- * Copyright 2013 Radoslaw Kamil Ejsmont <radoslaw@ejsmont.net>
+ * This file is part of the FliesBundle.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) 2017 BlueMesa LabDB Contributors <labdb@bluemesa.eu>
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace Bluemesa\Bundle\FliesBundle\Form;
 
+use Bluemesa\Bundle\CoreBundle\Form\HiddenEntityType;
 use Bluemesa\Bundle\CoreBundle\Form\TextEntityType;
+use Bluemesa\Bundle\FliesBundle\Entity\Vial;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
 use Symfony\Component\Validator\Constraints\Range;
 use Symfony\Component\Validator\Constraints\NotNull;
 
@@ -39,7 +36,7 @@ class VialExpandType extends AbstractType
     {
         $builder->add('source', TextEntityType::class, array(
                         'choice_label'        => 'id',
-                        'class'               => 'BluemesaFliesBundle:Vial',
+                        'class'               => Vial::class,
                         'format'              => '%06d',
                         'label'               => 'Source',
                         'attr'                => array('class' => 'barcode'),
@@ -47,16 +44,41 @@ class VialExpandType extends AbstractType
                         'constraints'         => array(new NotNull())
                     )
                 )
-                ->add('options', Type\VialOptionsType::class, array(
+                ->add('template', Type\VialOptionsType::class, array(
                         'horizontal'        => false,
                         'label_render'      => false,
-                        'widget_form_group' => false
+                        'widget_form_group' => false,
+                        'inherit_data'      => false,
+                        'data_class'        => Vial::class
                     )
                 )
                 ->add('number', NumberType::class, array(
                         'label'       => 'Number of vials',
                         'constraints' => array(new Range(array('min' => 1)))
                     )
-                );
+                )
+                ->addEventListener(
+                    FormEvents::PRE_SET_DATA,
+                    array($this, 'removeSourceField'));
+    }
+
+    /**
+     * @param FormEvent $event
+     */
+    public function removeSourceField(FormEvent $event)
+    {
+        /** @var Vial $vial */
+        $builder = $event->getForm();
+        $data = $event->getData();
+
+        if (null !== $data['source']) {
+            $builder->remove('source');
+            $builder->add('source', HiddenEntityType::class, array(
+                            'choice_label'        => 'id',
+                            'class'               => Vial::class,
+                            'constraints'         => array(new NotNull())
+                        )
+                    );
+        }
     }
 }

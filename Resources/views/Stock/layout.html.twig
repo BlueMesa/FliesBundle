@@ -16,14 +16,14 @@
         <li>
           <label>
             <input type="radio" name="access" id="access_mtnt" value="mtnt"
-              {{ (filter is  defined and filter.access == 'mtnt') ? 'checked' }} >
+              {{ (filter is not defined or filter.access == 'mtnt') ? 'checked' }} >
             Maintained stocks
           </label>
         </li>
         <li>
           <label>
             <input type="radio" name="access" id="access_private" value="private"
-              {{ (filter is  defined and filter.access == 'private') ? 'checked' }} >
+              {{ (filter is defined and filter.access == 'private') ? 'checked' }} >
             Private stocks
           </label>
         </li>

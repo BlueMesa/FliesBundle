@@ -1,7 +1,7 @@
 {% extends "BluemesaFliesBundle::layout.html.twig" %}
 
 {% if display_action is not defined %}
-  {% set display_action = path('bluemesa_flies_vial_list') %}
+  {% set display_action = path('bluemesa_flies_vial_index') %}
 {% endif %}
 {% if vials_name is not defined %}
   {% set vials_name = 'vials' %}
@@ -161,9 +161,11 @@
     <h3 class="panel-title"><a data-toggle="collapse" href="#actions">Actions</a></h3>
   </div>
   <ul id="actions" class="list-group collapse mobile-collapsed in">
+    {#
     <a class="list-group-item" href="{{ path('bluemesa_flies_vial_select') }}">Select vials</a>
     <a class="list-group-item" href="{{ path('bluemesa_flies_vial_expand') }}">Expand vial</a>
     <a class="list-group-item" href="{{ path('bluemesa_flies_vial_give') }}">Give vial</a>
+    #}
   </ul>
 </div>
 {% endblock sidebar_actions %}

@@ -1,0 +1,7 @@
+{% extends "BluemesaFliesBundle:Vial:edit.html.twig" %}
+{% import "BluemesaSiteTemplateBundle:Macros:form.html.twig" as f %}
+
+{% block modal_header %}New vial{% endblock modal_header %}
+{% block modal_footer %}
+    {{ f.buttons(form.vars.value, 'bluemesa_flies_vial') }}
+{% endblock modal_footer %}

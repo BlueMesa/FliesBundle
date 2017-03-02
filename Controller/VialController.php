@@ -1,47 +1,45 @@
 <?php
 
 /*
- * Copyright 2011 Radoslaw Kamil Ejsmont <radoslaw@ejsmont.net>
+ * This file is part of the FliesBundle.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) 2017 BlueMesa LabDB Contributors <labdb@bluemesa.eu>
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
 namespace Bluemesa\Bundle\FliesBundle\Controller;
 
+use Bluemesa\Bundle\AclBundle\Controller\AclControllerTrait;
+use Bluemesa\Bundle\AclBundle\Controller\Annotations as ACL;
+use Bluemesa\Bundle\CoreBundle\Controller\Annotations\Action;
+use Bluemesa\Bundle\CoreBundle\Controller\Annotations\Paginate;
+use Bluemesa\Bundle\CrudBundle\Controller\Annotations as CRUD;
+use Bluemesa\Bundle\CrudBundle\Controller\CrudControllerTrait;
+use FOS\RestBundle\Controller\Annotations as REST;
+use FOS\RestBundle\View\View;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+
+
 use InvalidArgumentException;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
-use JMS\SecurityExtraBundle\Annotation\SatisfiesParentSecurityPolicy;
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Collections\ArrayCollection;
 
-use Bluemesa\Bundle\AclBundle\Controller\SecureCRUDController;
-use Bluemesa\Bundle\CoreBundle\Filter\RedirectFilterInterface;
-
 use Bluemesa\Bundle\FliesBundle\Doctrine\VialManager;
 use Bluemesa\Bundle\FliesBundle\Filter\VialFilter;
 use Bluemesa\Bundle\FliesBundle\Form\BatchVialAclType;
 use Bluemesa\Bundle\FliesBundle\Label\PDFLabel;
 
-use Bluemesa\Bundle\FliesBundle\Form\VialType;
-use Bluemesa\Bundle\FliesBundle\Form\VialNewType;
 use Bluemesa\Bundle\FliesBundle\Form\VialExpandType;
 use Bluemesa\Bundle\FliesBundle\Form\SelectType;
 use Bluemesa\Bundle\FliesBundle\Form\VialGiveType;
@@ -54,77 +52,166 @@ use Bluemesa\Bundle\UserBundle\Entity\User;
 /**
  * VialController class
  *
- * @Route("/vials")
- *
  * @author Radoslaw Kamil Ejsmont <radoslaw@ejsmont.net>
+ *
+ * @REST\Prefix("/flies/vials")
+ * @REST\NamePrefix("bluemesa_flies_vial_")
+ * @CRUD\Controller()
  */
-class VialController extends SecureCRUDController
+class VialController extends Controller
 {
-    const ENTITY_CLASS = 'Bluemesa\Bundle\FliesBundle\Entity\Vial';
-    const ENTITY_NAME = 'vial|vials';
-    
+    use AclControllerTrait;
+    use CrudControllerTrait;
+    use VialControllerTrait;
 
     /**
-     * {@inheritdoc}
+     * @Security("has_role('ROLE_USER')")
+     *
+     * @CRUD\Action("index")
+     * @CRUD\Filter("Bluemesa\Bundle\FliesBundle\Filter\VialFilter",
+     *     redirectRoute="bluemesa_flies_stock_index_type_sort")
+     *
+     * @REST\View()
+     * @REST\Get("", defaults={"_format" = "html"}))
+     * @REST\Get("/{access}/{filter}", name="_access",
+     *     requirements={
+     *         "access" = "private|shared|public",
+     *         "filter" = "living|overdue|due|trashed|forgot|dead|all"
+     *     },
+     *     defaults={"_format" = "html", "access" = "private", "filter" = "living"})
+     * @REST\Get("/{access}/{filter}/sort/{sort}/{order}", name="_sort",
+     *     requirements={
+     *         "access" = "private|shared|public",
+     *         "filter" = "living|overdue|due|trashed|forgot|dead|all"
+     *     },
+     *     defaults={"access" = "private", "filter" = "living", "sort" = "setup", "order" = "asc", "_format" = "html"})
+     *
+     * @Paginate(25)
+     *
+     * @param  Request     $request
+     * @return View
      */
-    protected function getCreateForm()
+    public function indexAction(Request $request)
     {
-        return VialNewType::class;
+        return $this->getCrudHandler()->handle($request);
     }
 
     /**
-     * {@inheritdoc}
+     * @Security("has_role('ROLE_ADMIN') or is_granted('VIEW', entity)")
+     * @CRUD\Action("show")
+     * @REST\View()
+     * @REST\Get("/{id}", requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *
+     * @param  Request  $request
+     * @return View
      */
-    protected function getEditForm()
+    public function showAction(Request $request)
     {
-        return VialType::class;
+        return $this->getCrudHandler()->handle($request);
     }
 
     /**
-     * List vials
+     * @Security("has_role('ROLE_USER')")
+     * @CRUD\Action("new")
+     * @REST\View()
+     * @REST\Route("/new", methods={"GET", "POST"}, defaults={"_format" = "html"})
+     * @REST\Post("", name="_rest", defaults={"_format" = "html"})
      *
-     * @Route("/")
-     * @Route("/list/{access}/{filter}", defaults={"access" = "private", "filter" = "living"})
-     * @Route("/list/{access}/{filter}/sort/{sort}/{order}", defaults={"access" = "private", "filter" = "living", "sort" = "setup", "order" = "asc"})
-     * @Template()
-     * @SatisfiesParentSecurityPolicy
-     *
-     * @param  Request   $request
-     * @return Response
+     * @param  Request     $request
+     * @return View
      */
-    public function listAction(Request $request)
+    public function newAction(Request $request)
     {
-        $response = parent::listAction($request);
-        $this->setBatchActionRedirect($request);
-        $formResponse = $this->handleSelectForm($request,
-            SelectType::class,
-            array('class' => $this->getEntityClass()));
+        return $this->getCrudHandler()->handle($request);
+    }
 
-        if ($response instanceof Response) {
-            
-            return $response;
-        } 
-        
-        if ($formResponse instanceof Response) {
-            
-            return $formResponse;
-        } 
-        
-        return ((is_array($response))&&(is_array($formResponse))) ?
-            array_merge($response, $formResponse) : $response;
+    /**
+     * @Security("has_role('ROLE_ADMIN') or is_granted('EDIT', entity)")
+     * @CRUD\Action("edit")
+     * @REST\View()
+     * @REST\Route("/{id}/edit", methods={"GET", "PUT"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     * @REST\Put("/{id}", name="_rest", requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *
+     * @param  Request     $request
+     * @return View
+     */
+    public function editAction(Request $request)
+    {
+        return $this->getCrudHandler()->handle($request);
+    }
+
+    /**
+     * @Security("has_role('ROLE_ADMIN') or is_granted('DELETE', entity)")
+     * @CRUD\Action("delete")
+     * @REST\View()
+     * @REST\Route("/{id}/delete", methods={"GET", "DELETE"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     * @REST\Delete("/{id}", name="_rest", requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *
+     * @param  Request     $request
+     * @return View
+     */
+    public function deleteAction(Request $request)
+    {
+        return $this->getCrudHandler()->handle($request);
+    }
+
+    /**
+     * @Security("has_role('ROLE_ADMIN') or is_granted('MASTER', entity)")
+     * @ACL\Action("permissions")
+     * @REST\View()
+     * @REST\Route("/{id}/permissions", methods={"GET", "PUT"},
+     *     requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *
+     * @param  Request     $request
+     * @return View
+     */
+    public function permissionsAction(Request $request)
+    {
+        return $this->getAclHandler()->handle($request);
+    }
+
+    /**
+     * @Security("has_role('ROLE_USER')")
+     * @Action("expand")
+     * @REST\View()
+     * @REST\Route("/expand", methods={"GET", "POST"},
+     *     requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     * @REST\Route("/{id}/expand", name="_id", methods={"GET"},
+     *     requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *
+     * @param  Request     $request
+     * @return View
+     */
+    public function expandAction(Request $request)
+    {
+        return $this->getVialHandler()->handle($request);
+    }
+
+    /**
+     * @Security("has_role('ROLE_USER')")
+     * @Action("flip")
+     * @REST\View()
+     * @REST\Route("/flip", methods={"POST"},
+     *     requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     * @REST\Route("/{id}/flip", name="_id", methods={"GET"},
+     *     requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *
+     * @param  Request     $request
+     * @return View
+     */
+    public function flipAction(Request $request)
+    {
+        return $this->getVialHandler()->handle($request);
     }
 
     /**
      * Show vial
      *
-     * @Route("/show/{id}")
-     * @Template()
-     *
      * @param   Request   $request
      * @param   mixed     $id
      * @return  Response
      */
-    public function showAction(Request $request, $id)
+    public function oldShowAction(Request $request, $id)
     {
         /** @var Vial $vial */
         $vial = $this->getEntity($id);
@@ -136,76 +223,15 @@ class VialController extends SecureCRUDController
             return $this->getVialRedirect($request, $vial);
         }
     }
-    
-    /**
-     * Create vial
-     *
-     * @Route("/new")
-     * @Template()
-     * @SatisfiesParentSecurityPolicy
-     *
-     * @param  Request  $request
-     * @throws NotFoundHttpException
-     * @return Response
-     */
-    public function createAction(Request $request)
-    {
-        /** @var VialManager $om */
-        $om = $this->getObjectManager();
-
-        $class = $this->getEntityClass();
-        
-        if ($class == 'Bluemesa\Bundle\FliesBundle\Entity\Vial') {
-            throw $this->createNotFoundException();
-        }
-
-        $vial = new $class();
-        $data = array('vial' => $vial, 'number' => 1);
-        $form = $this->createForm($this->getCreateForm(), $data);
-        $form->handleRequest($request);
-
-        if ($form->isValid()) {
-            $data = $form->getData();
-            $vial = $data['vial'];
-            $number = $data['number'];
-
-            $vials = $om->expand($vial, $number, false);
-            $om->flush();
-
-            $message = (($count = count($vials)) == 1) ?
-                ucfirst($this->getEntityName()) . ' ' . $vials[0] . ' was created.' :
-                ucfirst($count . ' ' . $this->getEntityPluralName()) . ' were created.';
-            $this->addSessionFlash('success', $message);
-
-            $this->autoPrint($vials);
-
-            if ($count == 1) {
-                $route = str_replace("_create", "_show", $request->attributes->get('_route'));
-                /** @var Vial $firstVial */
-                $firstVial = $vials[0];
-                $url = $this->generateUrl($route,array('id' => $firstVial->getId()));
-            } else {
-                $route = str_replace("_create", "_list", $request->attributes->get('_route'));
-                $url = $this->generateUrl($route);
-            }
-
-            return $this->redirect($url);
-        }
-
-        return array('form' => $form->createView());
-    }
 
     /**
      * Edit vial
-     *
-     * @Route("/edit/{id}")
-     * @Template()
      *
      * @param  Request $request
      * @param  mixed                                       $id
      * @return Response
      */
-    public function editAction(Request $request, $id)
+    public function oldEditAction(Request $request, $id)
     {
         /** @var Vial $vial */
         $vial = $this->getEntity($id);
@@ -215,6 +241,7 @@ class VialController extends SecureCRUDController
             return $this->getVialRedirect($request, $vial);
         }
     }
+
 
     /**
      * Expand vial
@@ -226,7 +253,7 @@ class VialController extends SecureCRUDController
      * @param  mixed                                             $id
      * @return Response|array
      */
-    public function expandAction(Request $request, $id = null)
+    public function oldExpandAction(Request $request, $id = null)
     {
         /** @var VialManager $om */
         $om = $this->getObjectManager();
@@ -929,7 +956,7 @@ class VialController extends SecureCRUDController
         
         $this->getSession()->set('batch_action_redirect', $redirect);
     }
-    
+
     /**
      *
      *
@@ -944,14 +971,14 @@ class VialController extends SecureCRUDController
 
         return $this->redirect($url);
     }
-    
+
     /**
      * {@inheritdoc}
      */
     protected function getFilterRedirect(Request $request, RedirectFilterInterface $filter)
     {
         $currentRoute = $request->attributes->get('_route');
-        
+
         if ($currentRoute == '') {
             $route = 'bluemesa_flies_vial_list_2';
         } else {
@@ -969,17 +996,9 @@ class VialController extends SecureCRUDController
                 'sort' => $filter->getSort(),
                 'order' => $filter->getOrder()) :
             array();
-        
+
         $url = $this->generateUrl($route, $routeParameters);
-        
+
         return $this->redirect($url);
-    }
-    
-    /**
-     * {@inheritdoc}
-     */
-    protected function getFilter(Request $request)
-    {
-        return new VialFilter($request, $this->getAuthorizationChecker(), $this->getTokenStorage());
     }
 }

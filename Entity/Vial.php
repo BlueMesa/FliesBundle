@@ -1,29 +1,16 @@
 <?php
 
 /*
- * Copyright 2011 Radoslaw Kamil Ejsmont <radoslaw@ejsmont.net>
+ * This file is part of the FliesBundle.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) 2017 BlueMesa LabDB Contributors <labdb@bluemesa.eu>
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
 
+
 namespace Bluemesa\Bundle\FliesBundle\Entity;
-
-use Doctrine\ORM\Mapping as ORM;
-use JMS\Serializer\Annotation as Serializer;
-use Symfony\Component\Validator\Constraints as Assert;
-
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Criteria;
 
 use Bluemesa\Bundle\StorageBundle\Entity\RackContent;
 use Bluemesa\Bundle\StorageBundle\Entity\RackInterface;
@@ -31,6 +18,13 @@ use Bluemesa\Bundle\StorageBundle\Entity\RackPositionInterface;
 use Bluemesa\Bundle\StorageBundle\Entity\StorageUnitInterface;
 use Bluemesa\Bundle\StorageBundle\Entity\StorageUnitContentInterface;
 use Bluemesa\Bundle\StorageBundle\Entity\TermocontrolledInterface;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\Criteria;
+use Doctrine\ORM\Mapping as ORM;
+use JMS\Serializer\Annotation as Serializer;
+use Symfony\Component\Validator\Constraints as Assert;
+
 
 /**
  * Vial class
@@ -157,8 +151,8 @@ class Vial extends RackContent implements VialInterface
      * If $template is set, inherit properties from the template.
      * If $flip is true, become a child of the template.
      *
-     * @param Bluemesa\Bundle\FliesBundle\Entity\Vial $template
-     * @param boolean                     $flip
+     * @param Vial     $template
+     * @param boolean  $flip
      */
     public function __construct(Vial $template = null, $flip = true)
     {
@@ -224,7 +218,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Reset dates
      *
-     * @param Bluemesa\Bundle\FliesBundle\Entity\Vial $template
+     * @param Vial $template
      */
     private function resetDates(Vial $template = null)
     {
@@ -243,7 +237,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Inherit properties from template
      *
-     * @param Bluemesa\Bundle\FliesBundle\Entity\Vial $template
+     * @param Vial $template
      */
     protected function inheritFromTemplate(Vial $template = null)
     {
@@ -260,7 +254,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Set setupDate
      *
-     * @param DateTime $setupDate
+     * @param \DateTime $setupDate
      */
     public function setSetupDate($setupDate)
     {
@@ -271,7 +265,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Get setupDate
      *
-     * @return DateTime
+     * @return \DateTime
      */
     public function getSetupDate()
     {
@@ -281,7 +275,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Get flipDate
      *
-     * @return DateTime
+     * @return \DateTime
      */
     public function getFlipDate()
     {
@@ -291,7 +285,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Set flipDate
      *
-     * @param DateTime $flipDate
+     * @param \DateTime $flipDate
      */
     public function setStoredFlipDate($flipDate)
     {
@@ -307,7 +301,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Get stored flip date
      *
-     * @return DateTime
+     * @return \DateTime
      */
     public function getStoredFlipDate()
     {
@@ -317,7 +311,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Get default flip date
      * 
-     * @return DateTime
+     * @return \DateTime
      */
     public function getDefaultFlipDate()
     {
@@ -395,7 +389,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Add child
      *
-     * @param Bluemesa\Bundle\FliesBundle\Entity\Vial $child
+     * @param Vial $child
      */
     public function addChild(Vial $child)
     {
@@ -405,7 +399,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Remove child
      *
-     * @param Bluemesa\Bundle\FliesBundle\Entity\Vial $child
+     * @param Vial $child
      */
     public function removeChild(Vial $child)
     {
@@ -415,7 +409,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Get children
      *
-     * @return Doctrine\Common\Collections\Collection
+     * @return Collection
      */
     public function getChildren()
     {
@@ -425,7 +419,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Set parent
      *
-     * @param Bluemesa\Bundle\FliesBundle\Entity\Vial $parent
+     * @param Vial $parent
      */
     public function setParent(Vial $parent = null)
     {
@@ -435,7 +429,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Get parent
      *
-     * @return Bluemesa\Bundle\FliesBundle\Entity\Vial
+     * @return Vial
      */
     public function getParent()
     {
@@ -445,7 +439,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Set parent
      *
-     * @param Bluemesa\Bundle\FliesBundle\Entity\Vial $parent
+     * @param Vial $parent
      */
     public function setSourceVial(Vial $parent = null)
     {
@@ -455,7 +449,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Get parent
      *
-     * @return Bluemesa\Bundle\FliesBundle\Entity\Vial
+     * @return Vial
      */
     public function getSourceVial()
     {
@@ -475,7 +469,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Get maleCrosses
      *
-     * @return Doctrine\Common\Collections\ArrayCollection
+     * @return ArrayCollection
      */
     public function getMaleCrosses()
     {
@@ -485,7 +479,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Get virginCrosses
      *
-     * @return Doctrine\Common\Collections\ArrayCollection
+     * @return ArrayCollection
      */
     public function getVirginCrosses()
     {
@@ -495,7 +489,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Get crosses
      *
-     * @return Doctrine\Common\Collections\ArrayCollection
+     * @return ArrayCollection
      */
     public function getCrosses()
     {
@@ -513,7 +507,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Get living crosses
      *
-     * @return Doctrine\Common\Collections\ArrayCollection
+     * @return ArrayCollection
      */
     public function getLivingCrosses()
     {
@@ -584,12 +578,10 @@ class Vial extends RackContent implements VialInterface
      * {@inheritdoc}
      */
     public function getStorageUnit() {
-        if (($rack = $this->getRack()) instanceof StorageUnitContentInterface) {
-            
+        $rack = $this->getRack();
+        if ($rack instanceof StorageUnitContentInterface) {
             return $rack->getStorageUnit();
-            
         } else {
-            
             return $this->incubator;
         }
     }
@@ -668,7 +660,7 @@ class Vial extends RackContent implements VialInterface
     /**
      * Get interval between setup and flip dates
      * 
-     * @return DateInterval
+     * @return \DateInterval
      */
     protected function getFlipInterval()
     {
@@ -741,16 +733,12 @@ class Vial extends RackContent implements VialInterface
     public function wasUsed()
     {
         if ($this->getChildren()->count() > 0) {
-            
             return true;
         } else if ($this->getVirginCrosses()->count() > 0) {
-            
             return true;
         } else if ($this->getMaleCrosses()->count() > 0) {
-            
             return true;
         } else {
-            
             return false;
         }
     }

@@ -106,7 +106,7 @@ class StockListener implements EventSubscriberInterface
         $stock = $event->getEntity();
         if (! $stock instanceof Stock) {
           return;
-        };
+        }
 
         $repository = $this->registry->getRepository(StockVial::class);
         if (! $repository instanceof StockVialRepository) {
@@ -150,7 +150,7 @@ class StockListener implements EventSubscriberInterface
         $stock = $event->getEntity();
         if (! $stock instanceof Stock) {
             return;
-        };
+        }
 
         $view = $event->getView();
         if ($view->getResponse() instanceof RedirectResponse) {
@@ -178,7 +178,7 @@ class StockListener implements EventSubscriberInterface
         $stock = $event->getEntity();
         if (! $stock instanceof Stock) {
             return;
-        };
+        }
 
         $form = $event->getForm();
         /** @var StockVial $vial */
@@ -186,7 +186,7 @@ class StockListener implements EventSubscriberInterface
         /** @var integer $number */
         $number = $form->get('number')->getData();
 
-        for ($i=0; $i<$number; $i++) {
+        for ($i = 0; $i < $number; $i++) {
             $stock->addVial(clone $vial);
         }
     }
@@ -199,7 +199,7 @@ class StockListener implements EventSubscriberInterface
         $stock = $event->getEntity();
         if (! $stock instanceof Stock) {
             return;
-        };
+        }
 
         $event = new VialEvent($stock->getVials());
         $this->dispatcher->dispatch(FlyEvents::VIALS_CREATED, $event);
@@ -213,7 +213,7 @@ class StockListener implements EventSubscriberInterface
         $stock = $event->getEntity();
         if ((!$stock instanceof Stock)||($stock->getId() !== null)||(empty($stock->getName()))) {
             return;
-        };
+        }
 
         $view = $event->getView();
         if ($view->getResponse() instanceof RedirectResponse) {

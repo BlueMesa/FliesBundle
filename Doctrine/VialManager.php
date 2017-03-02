@@ -1,32 +1,25 @@
 <?php
 
 /*
- * Copyright 2013 Radoslaw Kamil Ejsmont <radoslaw@ejsmont.net>
+ * This file is part of the Flies Bundle.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) 2017 BlueMesa LabDB Contributors <labdb@bluemesa.eu>
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
  */
+
 
 namespace Bluemesa\Bundle\FliesBundle\Doctrine;
 
-use JMS\DiExtraBundle\Annotation as DI;
-
 use Bluemesa\Bundle\AclBundle\Doctrine\OwnedObjectManager;
-use Doctrine\Common\Collections\Collection;
-use Doctrine\Common\Collections\ArrayCollection;
-
 use Bluemesa\Bundle\FliesBundle\Entity\Vial;
 use Bluemesa\Bundle\FliesBundle\Entity\Incubator;
 use Bluemesa\Bundle\FliesBundle\Repository\VialRepository;
+use Doctrine\Common\Collections\Collection;
+use Doctrine\Common\Collections\ArrayCollection;
+use JMS\DiExtraBundle\Annotation as DI;
+
 
 /**
  * VialManager is a class used to manage common operations on vials
@@ -61,15 +54,16 @@ class VialManager extends OwnedObjectManager
     /**
      * Flip vial(s)
      *
-     * @param  \Bluemesa\Bundle\FliesBundle\Entity\Vial|\Doctrine\Common\Collections\Collection  $vials
-     * @param  boolean                                                               $setSource
-     * @param  boolean                                                               $trashSource
-     * @return \Bluemesa\Bundle\FliesBundle\Entity\Vial|\Doctrine\Common\Collections\Collection
+     * @param  Vial|Collection  $vials
+     * @param  boolean          $setSource
+     * @param  boolean          $trashSource
+     * @return Vial|Collection
      * @throws \ErrorException
      */
     public function flip($vials, $setSource = true, $trashSource = false)
     {
-        if (($vial = $vials) instanceof Vial) {
+        $vial = $vials;
+        if ($vial instanceof Vial) {
             $vialClass = str_replace("Proxies\\__CG__\\", "", get_class($vial));
             /** @var Vial $newVial */
             $newVial = new $vialClass($vial, $setSource);
@@ -99,12 +93,13 @@ class VialManager extends OwnedObjectManager
     /**
      * Trash vial(s)
      *
-     * @param  \Bluemesa\Bundle\FliesBundle\Entity\Vial|\Doctrine\Common\Collections\Collection  $vials
+     * @param  Vial|Collection  $vials
      * @throws \ErrorException
      */
     public function trash($vials)
     {
-        if (($vial = $vials) instanceof Vial) {
+        $vial = $vials;
+        if ($vial instanceof Vial) {
             $vial->setTrashed(true);
             $this->persist($vial);
         } elseif ($vials instanceof Collection) {
@@ -122,12 +117,13 @@ class VialManager extends OwnedObjectManager
     /**
      * UnTrash vial(s)
      *
-     * @param  \Bluemesa\Bundle\FliesBundle\Entity\Vial|\Doctrine\Common\Collections\Collection  $vials
+     * @param  Vial|Collection  $vials
      * @throws \ErrorException
      */
     public function untrash($vials)
     {
-        if (($vial = $vials) instanceof Vial) {
+        $vial = $vials;
+        if ($vial instanceof Vial) {
             $vial->setTrashed(false);
             $this->persist($vial);
         } elseif ($vials instanceof Collection) {
@@ -145,12 +141,13 @@ class VialManager extends OwnedObjectManager
     /**
      * Mark vial(s) as having their label printed
      *
-     * @param  \Bluemesa\Bundle\FliesBundle\Entity\Vial|\Doctrine\Common\Collections\Collection  $vials
+     * @param  Vial|Collection  $vials
      * @throws \ErrorException
      */
     public function markPrinted($vials)
     {
-        if (($vial = $vials) instanceof Vial) {
+        $vial = $vials;
+        if ($vial instanceof Vial) {
             $vial->setLabelPrinted(true);
             $this->persist($vial);
         } elseif ($vials instanceof Collection) {
@@ -168,13 +165,14 @@ class VialManager extends OwnedObjectManager
     /**
      * Put vials into $incubator
      *
-     * @param \Bluemesa\Bundle\FliesBundle\Entity\Vial|\Doctrine\Common\Collections\Collection  $vials
-     * @param \Bluemesa\Bundle\FliesBundle\Entity\Incubator
+     * @param Vial|Collection  $vials
+     * @param Incubator        $incubator
      * @throws \ErrorException
      */
     public function incubate($vials, Incubator $incubator = null)
     {
-        if (($vial = $vials) instanceof Vial) {
+        $vial = $vials;
+        if ($vial instanceof Vial) {
             $vial->setStorageUnit($incubator);
             $this->persist($vial);
         } elseif ($vials instanceof Collection) {
@@ -192,25 +190,20 @@ class VialManager extends OwnedObjectManager
     /**
      * Expand a vial into multiple vials of arbitrary size
      *
-     * @param  \Bluemesa\Bundle\FliesBundle\Entity\Vial             $vial
-     * @param  integer                                  $count
-     * @param  boolean                                  $setSource
-     * @param  string                                   $size
-     * @param  string                                   $food
-     * @return \Doctrine\Common\Collections\Collection
+     * @param  Vial             $vial
+     * @param  integer          $count
+     * @param  boolean          $setSource
+     * @param  Vial             $template
+     * @return Collection
      */
-    public function expand(Vial $vial, $count = 1, $setSource = true, $size = null, $food = null)
+    public function expand(Vial $vial, $count = 1, $setSource = true, Vial $template = null)
     {
         $newVials = new ArrayCollection();
         for ($i = 0; $i < $count; $i++) {
             $newVial = $this->flip($vial, $setSource);
-            if ((null !== $size)||(null !== $food)) {
-                if (null !== $size) {
-                    $newVial->setSize($size);
-                }
-                if (null !== $food) {
-                    $newVial->setFood($food);
-                }
+            if (null !== $template) {
+                $newVial->setSize($template->getSize());
+                $newVial->setFood($template->getFood());
                 $this->persist($newVial);
             }
             $newVials->add($newVial);
@@ -218,10 +211,10 @@ class VialManager extends OwnedObjectManager
 
         return $newVials;
     }
-    
+
     /**
-     * 
-     * @param  mixed  $object
+     * @param  mixed $object
+     * @param  mixed $user
      * @return array
      */
     public function getDefaultACL($object = null, $user = null)
