@@ -82,13 +82,13 @@ class WelcomeController extends AbstractController
         $stats = array();
         $stats['count'] = count($vials);
 
-        $filter->setFilter('forgot');
+        $filter->setCondition('forgot');
         $stats['forgot'] = $repository->getListCount($filter);
         
-        $filter->setFilter('due');
+        $filter->setCondition('due');
         $stats['due'] = $repository->getListCount($filter);
         
-        $filter->setFilter('overdue');
+        $filter->setCondition('overdue');
         $stats['overdue'] = $repository->getListCount($filter);
         
         return $stats;

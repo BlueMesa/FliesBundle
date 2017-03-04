@@ -77,7 +77,7 @@ class CrossVialRepository extends SearchableVialRepository
     {
         $filter = new VialFilter();
         $filter->setAccess('shared');
-        $filter->setFilter('all');
+        $filter->setCondition('all');
 
         $startDate = clone $cross->getSetupDate();
         $stopDate = clone $cross->getSetupDate();

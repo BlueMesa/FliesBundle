@@ -94,7 +94,7 @@ class InjectionVialRepository extends SearchableVialRepository
     {
         $filter = new VialFilter();
         $filter->setAccess('shared');
-        $filter->setFilter('all');
+        $filter->setCondition('all');
 
         $startDate = clone $injection->getSetupDate();
         $stopDate = clone $injection->getSetupDate();

@@ -87,7 +87,7 @@ class VialRepository extends EntityRepository
      */
     protected function applyQueryBuilderFilter($builder, ListFilterInterface $filter = null)
     {
-        $filterName = ($filter instanceof VialFilter) ? $filter->getFilter() : null;
+        $filterName = ($filter instanceof VialFilter) ? $filter->getCondition() : null;
         
         switch ($filterName) {
             case 'all':

@@ -43,7 +43,9 @@ trait VialEventTrait
     public function setVial(VialInterface $vial = null)
     {
         $this->vials->clear();
-        $this->addVial($vial);
+        if (null !== $vial) {
+            $this->addVial($vial);
+        }
     }
 
     /**

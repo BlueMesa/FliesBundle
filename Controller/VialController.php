@@ -73,18 +73,18 @@ class VialController extends Controller
      *
      * @REST\View()
      * @REST\Get("", defaults={"_format" = "html"}))
-     * @REST\Get("/{access}/{filter}", name="_access",
+     * @REST\Get("/{access}/{condition}", name="_access",
      *     requirements={
      *         "access" = "private|shared|public",
-     *         "filter" = "living|overdue|due|trashed|forgot|dead|all"
+     *         "condition" = "living|overdue|due|trashed|forgot|dead|all"
      *     },
-     *     defaults={"_format" = "html", "access" = "private", "filter" = "living"})
-     * @REST\Get("/{access}/{filter}/sort/{sort}/{order}", name="_sort",
+     *     defaults={"_format" = "html", "access" = "private", "condition" = "living"})
+     * @REST\Get("/{access}/{condition}/sort/{sort}/{order}", name="_sort",
      *     requirements={
      *         "access" = "private|shared|public",
-     *         "filter" = "living|overdue|due|trashed|forgot|dead|all"
+     *         "condition" = "living|overdue|due|trashed|forgot|dead|all"
      *     },
-     *     defaults={"access" = "private", "filter" = "living", "sort" = "setup", "order" = "asc", "_format" = "html"})
+     *     defaults={"access" = "private", "condition" = "living", "sort" = "setup", "order" = "asc", "_format" = "html"})
      *
      * @Paginate(25)
      *
@@ -129,8 +129,8 @@ class VialController extends Controller
      * @Security("has_role('ROLE_ADMIN') or is_granted('EDIT', entity)")
      * @CRUD\Action("edit")
      * @REST\View()
-     * @REST\Route("/{id}/edit", methods={"GET", "PUT"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
-     * @REST\Put("/{id}", name="_rest", requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     * @REST\Route("/{id}/edit", methods={"GET", "PUT"}, requirements={"id" = "\d+"}, defaults={"_format" = "html"})
+     * @REST\Put("/{id}", name="_rest", requirements={"id" = "\d+"}, defaults={"_format" = "html"})
      *
      * @param  Request     $request
      * @return View
@@ -144,8 +144,9 @@ class VialController extends Controller
      * @Security("has_role('ROLE_ADMIN') or is_granted('DELETE', entity)")
      * @CRUD\Action("delete")
      * @REST\View()
-     * @REST\Route("/{id}/delete", methods={"GET", "DELETE"}, requirements={"id"="\d+"}, defaults={"_format" = "html"})
-     * @REST\Delete("/{id}", name="_rest", requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     * @REST\Route("/{id}/delete", methods={"GET", "DELETE"},
+     *     requirements={"id" = "\d+"}, defaults={"_format" = "html"})
+     * @REST\Delete("/{id}", name="_rest", requirements={"id" = "\d+"}, defaults={"_format" = "html"})
      *
      * @param  Request     $request
      * @return View
@@ -160,7 +161,7 @@ class VialController extends Controller
      * @ACL\Action("permissions")
      * @REST\View()
      * @REST\Route("/{id}/permissions", methods={"GET", "PUT"},
-     *     requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *     requirements={"id" = "\d+"}, defaults={"_format" = "html"})
      *
      * @param  Request     $request
      * @return View
@@ -175,9 +176,9 @@ class VialController extends Controller
      * @Action("expand")
      * @REST\View()
      * @REST\Route("/expand", methods={"GET", "POST"},
-     *     requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *     requirements={"id" = "\d+"}, defaults={"_format" = "html"})
      * @REST\Route("/{id}/expand", name="_id", methods={"GET"},
-     *     requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *     requirements={"id" = "\d+"}, defaults={"_format" = "html"})
      *
      * @param  Request     $request
      * @return View
@@ -192,9 +193,9 @@ class VialController extends Controller
      * @Action("flip")
      * @REST\View()
      * @REST\Route("/flip", methods={"POST"},
-     *     requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *     requirements={"id" = "\d+"}, defaults={"_format" = "html", "trash" = false})
      * @REST\Route("/{id}/flip", name="_id", methods={"GET"},
-     *     requirements={"id"="\d+"}, defaults={"_format" = "html"})
+     *     requirements={"id" = "\d+"}, defaults={"_format" = "html", "trash" = false})
      *
      * @param  Request     $request
      * @return View
@@ -243,57 +244,6 @@ class VialController extends Controller
     }
 
 
-    /**
-     * Expand vial
-     *
-     * @Route("/expand/{id}", defaults={"id" = null})
-     * @Template()
-     *
-     * @param  Request $request
-     * @param  mixed                                             $id
-     * @return Response|array
-     */
-    public function oldExpandAction(Request $request, $id = null)
-    {
-        /** @var VialManager $om */
-        $om = $this->getObjectManager();
-        /** @var Vial $source */
-        $source = (null !== $id) ? $this->getEntity($id) : null;
-        $data = array(
-            'source' => $source,
-            'number' => 1,
-            'size' => null !== $source ? $source->getSize() : 'medium',
-            'food' => null !== $source ? $source->getFood() : 'Normal'
-        );
-        $form = $this->createForm(VialExpandType::class, $data);
-
-        $form->handleRequest($request);
-        if ($form->isValid()) {
-            $data = $form->getData();
-            $source = $data['source'];
-            $number = $data['number'];
-            $size = $data['size'];
-            $food = $data['food'];
-
-            $vials = $om->expand($source, $number, true, $size, $food);
-            $om->flush();
-
-            $message = (($count = count($vials)) == 1) ?
-                ucfirst($this->getEntityName()) . ' ' . $source . ' was flipped.' :
-                ucfirst($this->getEntityName()) . ' ' . $source . ' was expanded into ' . $count . ' vials.';
-            $this->addSessionFlash('success', $message);
-
-            $this->autoPrint($vials);
-
-            $route = str_replace("_expand", "_list", $request->attributes->get('_route'));
-            $url = $this->generateUrl($route);
-
-            return $this->redirect($url);
-        }
-
-        return array('form' => $form->createView(), 'cancel' => 'bluemesa_flies_vial_list');
-    }
-    
     /**
      * Expand vial
      *
@@ -992,7 +942,7 @@ class VialController extends Controller
         $routeParameters = ($filter instanceof VialFilter) ?
             array(
                 'access' => $filter->getAccess(),
-                'filter' => $filter->getFilter(),
+                'filter' => $filter->getCondition(),
                 'sort' => $filter->getSort(),
                 'order' => $filter->getOrder()) :
             array();

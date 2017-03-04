@@ -55,13 +55,13 @@ class VialFilter extends SecureListFilter implements SortFilterInterface, Redire
                 $this->setDead($request->get('dead', 'all'));
                 $this->redirect = true;
             } else {
-                $this->setFilter($request->get('filter', 'living'));
+                $this->setCondition($request->get('condition', 'living'));
                 $this->redirect = false;
             }
             $this->setOrder($request->get('order', 'desc'));
             $this->setSort($request->get('sort', 'setup'));
         } else {
-            $this->setFilter('living');
+            $this->setCondition('living');
             $this->setSort('setup');
             $this->setOrder('desc');
             $this->redirect = false;
@@ -164,11 +164,11 @@ class VialFilter extends SecureListFilter implements SortFilterInterface, Redire
     }
     
     /**
-     * Get filter
+     * Get condition
      * 
      * @return string
      */
-    public function getFilter()
+    public function getCondition()
     {
         if ($this->health == 'living') {
             if ($this->living == 'due') {
@@ -192,13 +192,13 @@ class VialFilter extends SecureListFilter implements SortFilterInterface, Redire
     }
 
     /**
-     * Set filter
+     * Set condition
      * 
-     * @param string $filter
+     * @param string $condition
      */
-    public function setFilter($filter)
+    public function setCondition($condition)
     {
-        switch ($filter) {
+        switch ($condition) {
             case 'all':
                 $this->health = 'all';
                 break;

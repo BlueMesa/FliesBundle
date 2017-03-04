@@ -12,21 +12,21 @@
 
 namespace Bluemesa\Bundle\FliesBundle\Event;
 
-use Bluemesa\Bundle\FliesBundle\Entity\Vial;
+use Bluemesa\Bundle\FliesBundle\Entity\VialInterface;
 use Doctrine\Common\Collections\Collection;
 
 
 interface VialEventInterface
 {
     /**
-     * @return Vial
+     * @return VialInterface
      */
     public function getVial();
 
     /**
-     * @param Vial $vial
+     * @param VialInterface $vial
      */
-    public function setVial(Vial $vial = null);
+    public function setVial(VialInterface $vial = null);
 
     /**
      * @return Collection
@@ -41,14 +41,14 @@ interface VialEventInterface
     /**
      * Add vial
      *
-     * @param Vial $vial
+     * @param VialInterface $vial
      */
-    public function addVial(Vial $vial);
+    public function addVial(VialInterface $vial);
 
     /**
      * Remove vial
      *
-     * @param Vial $vial
+     * @param VialInterface $vial
      */
-    public function removeVial(Vial $vial);
+    public function removeVial(VialInterface $vial);
 }

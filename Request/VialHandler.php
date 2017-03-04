@@ -13,9 +13,11 @@
 namespace Bluemesa\Bundle\FliesBundle\Request;
 
 
+use Bluemesa\Bundle\CoreBundle\Entity\EntityInterface;
 use Bluemesa\Bundle\CoreBundle\EventListener\RoutePrefixTrait;
 use Bluemesa\Bundle\CoreBundle\Form\TextEntityType;
 use Bluemesa\Bundle\CoreBundle\Request\AbstractHandler;
+use Bluemesa\Bundle\CoreBundle\Request\FormHandlerTrait;
 use Bluemesa\Bundle\FliesBundle\Doctrine\VialManager;
 use Bluemesa\Bundle\FliesBundle\Entity\Vial;
 use Bluemesa\Bundle\FliesBundle\Entity\VialInterface;
@@ -23,11 +25,14 @@ use Bluemesa\Bundle\FliesBundle\Event\BatchActionEvent;
 use Bluemesa\Bundle\FliesBundle\Event\ExpandActionEvent;
 use Bluemesa\Bundle\FliesBundle\Event\FlipActionEvent;
 use Bluemesa\Bundle\FliesBundle\Event\FlyEvents;
+use Bluemesa\Bundle\FliesBundle\Event\TrashActionEvent;
+use Bluemesa\Bundle\FliesBundle\Event\UntrashActionEvent;
 use Bluemesa\Bundle\FliesBundle\Form\VialExpandType;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use FOS\RestBundle\View\View;
 use JMS\DiExtraBundle\Annotation as DI;
+use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -44,6 +49,7 @@ use Symfony\Component\HttpFoundation\Request;
 class VialHandler extends AbstractHandler
 {
     use RoutePrefixTrait;
+    use FormHandlerTrait;
 
     /**
      * This method calls a proper handler for the incoming request
@@ -80,35 +86,23 @@ class VialHandler extends AbstractHandler
     public function handleExpandAction(Request $request)
     {
         $vial = $request->get('entity');
-        $vm = (null !== $vial) ? $this->registry->getManagerForClass($vial) :
-            $this->registry->getManagerForClass($request->get('entity_class'));
-
-        if (! $vm instanceof VialManager) {
-            throw new \LogicException("Expand action can only be performed on VialInterface instances managed " .
-                "by an instance of VialManager");
-        }
-
-        $data = array(
+        $vm = $this->getVialManager($vial, $request->get('entity_class'), $request->get('action'));
+        $form = $this->factory->create(VialExpandType::class, array(
             'source' => $vial,
             'template' => $vial,
             'number' => 1,
+        ));
+
+        $events = array(
+            'class' => ExpandActionEvent::class,
+            'initialize' => FlyEvents::EXPAND_INITIALIZE,
+            'submitted' => FlyEvents::EXPAND_SUBMITTED,
+            'success' => FlyEvents::EXPAND_SUCCESS,
+            'completed' => FlyEvents::EXPAND_COMPLETED
         );
 
-        $form = $this->factory->create(VialExpandType::class, $data);
-
-        $event = new ExpandActionEvent($request, $vial, $form);
-        $this->dispatcher->dispatch(FlyEvents::EXPAND_INITIALIZE, $event);
-
-        if (null !== $event->getView()) {
-            return $event->getView();
-        }
-
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $event = new ExpandActionEvent($request, $vial, $form);
-            $this->dispatcher->dispatch(FlyEvents::EXPAND_SUBMITTED, $event);
-
+        $handler = function(Request $request, BatchActionEvent $event) use ($vm) {
+            $form = $event->getForm();
             $source = $form->get('source')->getData();
             $template = $form->get('template')->getData();
             $number = $form->get('number')->getData();
@@ -116,23 +110,10 @@ class VialHandler extends AbstractHandler
             $vials = $vm->expand($source, $number, true, $template);
             $vm->flush();
 
-            $event = new ExpandActionEvent($request, $vial, $form, $vials, $event->getView());
-            $this->dispatcher->dispatch(FlyEvents::EXPAND_SUCCESS, $event);
+            return $vials;
+        };
 
-            if (null === $view = $event->getView()) {
-                $view = View::createRouteRedirect($this->getRedirectRoute($request));
-            }
-
-        } else {
-            $route = str_replace("_expand", "_index", $request->attributes->get('_route'));
-            $view = View::create(array('form' => $form->createView()));
-            $vials = null;
-        }
-
-        $event = new ExpandActionEvent($request, $vial, $form, $vials, $view);
-        $this->dispatcher->dispatch(FlyEvents::EXPAND_COMPLETED, $event);
-
-        return $event->getView();
+        return $this->handleFormRequest($request, $vial, $form, $events, $handler);
     }
 
     /**
@@ -143,131 +124,184 @@ class VialHandler extends AbstractHandler
      */
     public function handleFlipAction(Request $request)
     {
-        /** @var VialInterface|Collection $source */
-        $source = $request->get('entity');
-        $trash = $request->get('trash', false);
-        $vm = (null !== $source) ? $this->registry->getManagerForClass($source) :
-            $this->registry->getManagerForClass($request->get('entity_class'));
+        $entity = $request->get('entity');
+        $vm = $this->getVialManager($entity, $request->get('entity_class'), $request->get('action'));
+        list($source, $form) = $this->getSourceAndForm($entity, 'POST');
 
-        if (! $vm instanceof VialManager) {
-            throw new \LogicException("Flip action can only be performed on VialInterface instances managed " .
-                "by an instance of VialManager");
-        }
+        $events = array(
+            'class' => FlipActionEvent::class,
+            'initialize' => FlyEvents::FLIP_INITIALIZE,
+            'submitted' => FlyEvents::FLIP_SUBMITTED,
+            'success' => FlyEvents::FLIP_SUCCESS,
+            'completed' => FlyEvents::FLIP_COMPLETED
+        );
 
-        if (null === $source) {
-            $source = new ArrayCollection();
-            $form = $this->createBatchForm($source);
-        } else {
-            $form = $this->factory->createBuilder()->setMethod('POST')->getForm();
-        }
-
-        $event = new FlipActionEvent($request, $source);
-        $this->dispatcher->dispatch(FlyEvents::FLIP_INITIALIZE, $event);
-
-        if (null !== $event->getView()) {
-            return $event->getView();
-        }
-
-        $form->handleRequest($request);
-        $result = null;
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $event = new FlipActionEvent($request, $source);
-            $this->dispatcher->dispatch(FlyEvents::FLIP_SUBMITTED, $event);
-
-            $result = $vm->flip($source, true, $trash);
+        $handler = function(Request $request, BatchActionEvent $event) use ($vm) {
+            $trash = $request->get('trash', false);
+            $result = $vm->flip($event->getSource(), true, $trash);
             $vm->flush();
 
-            $event = new FlipActionEvent($request, $source, $result, $event->getView());
-            $this->dispatcher->dispatch(FlyEvents::FLIP_SUCCESS, $event);
+            return $result;
+        };
 
-            if (null === $view = $event->getView()) {
-                $referer = $request->get('referer');
-                if (is_array($referer)) {
-                    $view = View::createRouteRedirect($referer['route'], $referer['parameters']);
-                } else {
-                    $view = View::createRouteRedirect($this->getRedirectRoute($request));
-                }
-            }
-
-        } else {
-            $view = View::create(array('form' => $form->createView()));
-        }
-
-        $event = new FlipActionEvent($request, $source, $result, $view);
-        $this->dispatcher->dispatch(FlyEvents::FLIP_COMPLETED, $event);
-
-        return $event->getView();
+        return $this->handleFormRequest($request, $source, $form, $events, $handler);
     }
 
-
-
     /**
-     * This is a wrapper for vial batch actions
+     * This method handles trash action requests.
      *
-     * @param Request $request
-     * @param string  $eventClass
-     * @param array  $eventNames
-     * @param $handler
+     * @param  Request $request
      * @return View
      */
-    private function handleBatchAction(Request $request, $eventClass, array $eventNames, $handler)
+    public function handleTrashAction(Request $request)
     {
-        $action = $request->get('action');
+        $entity = $request->get('entity');
+        $vm = $this->getVialManager($entity, $request->get('entity_class'), $request->get('action'));
+        list($source, $form) = $this->getSourceAndForm($entity, 'PATCH');
 
-        /** @var VialInterface|Collection $source */
-        $source = $request->get('entity');
-        $vm = (null !== $source) ? $this->registry->getManagerForClass($source) :
-            $this->registry->getManagerForClass($request->get('entity_class'));
+        $events = array(
+            'class' => TrashActionEvent::class,
+            'initialize' => FlyEvents::TRASH_INITIALIZE,
+            'submitted' => FlyEvents::TRASH_SUBMITTED,
+            'success' => FlyEvents::TRASH_SUCCESS,
+            'completed' => FlyEvents::TRASH_COMPLETED
+        );
+
+        $handler = function(Request $request, BatchActionEvent $event) use ($vm) {
+            $source = $event->getSource();
+            $vm->trash($source);
+            $vm->flush();
+
+            return $source;
+        };
+
+        return $this->handleFormRequest($request, $source, $form, $events, $handler);
+    }
+
+    /**
+     * This method handles untrash action requests.
+     *
+     * @param  Request $request
+     * @return View
+     */
+    public function handleUntrashAction(Request $request)
+    {
+        $entity = $request->get('entity');
+        $vm = $this->getVialManager($entity, $request->get('entity_class'), $request->get('action'));
+        list($source, $form) = $this->getSourceAndForm($entity, 'PATCH');
+
+        $events = array(
+            'class' => UntrashActionEvent::class,
+            'initialize' => FlyEvents::UNTRASH_INITIALIZE,
+            'submitted' => FlyEvents::UNTRASH_SUBMITTED,
+            'success' => FlyEvents::UNTRASH_SUCCESS,
+            'completed' => FlyEvents::UNTRASH_COMPLETED
+        );
+
+        $handler = function(Request $request, BatchActionEvent $event) use ($vm) {
+            $source = $event->getSource();
+            $vm->untrash($source);
+            $vm->flush();
+
+            return $source;
+        };
+
+        return $this->handleFormRequest($request, $source, $form, $events, $handler);
+    }
+
+    /**
+     * This method handles untrash action requests.
+     *
+     * @param  Request $request
+     * @return View
+     */
+    public function handleLabelAction(Request $request)
+    {
+        $events = array(
+            'initialize' => FlyEvents::UNTRASH_INITIALIZE,
+            'submitted' => FlyEvents::UNTRASH_SUBMITTED,
+            'success' => FlyEvents::UNTRASH_SUCCESS,
+            'completed' => FlyEvents::UNTRASH_COMPLETED
+        );
+
+        $handler = function(Request $request, $vials, VialManager $vm, UntrashActionEvent $event) {
+            $vm->untrash($vials);
+            $vm->flush();
+
+            return $vials;
+        };
+
+        return $this->handleBatchAction($request, 'PUT', UntrashActionEvent::class, $events, $handler);
+    }
+
+    /**
+     * This method handles print action requests.
+     *
+     * @param  Request $request
+     * @return View
+     */
+    public function handlePrintAction(Request $request)
+    {
+
+    }
+
+    /**
+     * @param  string         $class
+     * @param  Request        $request
+     * @param  mixed          $entity
+     * @param  mixed          $result
+     * @param  FormInterface  $form
+     * @param  View           $view
+     * @return Event
+     */
+    protected function createEvent($class, Request $request, $entity,
+                                   $result = null, FormInterface $form = null, View $view = null)
+    {
+        if (is_a($class, BatchActionEvent::class, true)) {
+            $event = new $class($request, $entity, $result, $form, $view);
+        } else {
+            $event = new $class($request, $entity, $form, $view);
+        }
+
+        return $event;
+    }
+
+    /**
+     * @param  EntityInterface  $entity
+     * @param  string           $method
+     * @return array
+     */
+    private function getSourceAndForm(EntityInterface $entity = null, $method)
+    {
+        if (null === $entity) {
+            $source = new ArrayCollection();
+            $form = $this->createBatchForm($source, $method);
+        } else {
+            $source = $entity;
+            $form = $this->factory->createBuilder()->setMethod($method)->getForm();
+        }
+
+        return array($source, $form);
+    }
+
+    /**
+     * @param  mixed  $entity
+     * @param  string $class
+     * @param  string $action
+     * @return VialManager
+     */
+    private function getVialManager($entity, $class, $action)
+    {
+        $vm = (null !== $entity) ? $this->registry->getManagerForClass($entity) :
+            $this->registry->getManagerForClass($class);
 
         if (! $vm instanceof VialManager) {
-            throw new \LogicException(sprintf("%s action can only be performed on VialInterface instances managed by an instance of VialManager", ucfirst($action)));
+            throw new \LogicException(sprintf(
+                "%s action can only be performed on VialInterface instances managed by an instance of VialManager",
+                ucfirst($action)));
         }
 
-        if (null === $source) {
-            $source = new ArrayCollection();
-            $form = $this->createBatchForm($source);
-        } else {
-            $form = $this->factory->createBuilder()->setMethod('POST')->getForm();
-        }
-
-        /** @var BatchActionEvent $event */
-        $event = new $eventClass($request, $source);
-        $this->dispatcher->dispatch($eventNames['initialize'], $event);
-
-        if (null !== $event->getView()) {
-            return $event->getView();
-        }
-
-        $form->handleRequest($request);
-        $result = null;
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $event = new $eventClass($request, $source);
-            $this->dispatcher->dispatch($eventNames['submitted'], $event);
-
-            $result = $handler($request, $source, $vm, $event);
-
-            $event = new $eventClass($request, $source, $result, $event->getView());
-            $this->dispatcher->dispatch($eventNames['success'], $event);
-
-            if (null === $view = $event->getView()) {
-                $referer = $request->get('referer');
-                if (is_array($referer)) {
-                    $view = View::createRouteRedirect($referer['route'], $referer['parameters']);
-                } else {
-                    $view = View::createRouteRedirect($this->getRedirectRoute($request));
-                }
-            }
-
-        } else {
-            $view = View::create(array('form' => $form->createView()));
-        }
-
-        $event = new $eventClass($request, $source, $result, $view);
-        $this->dispatcher->dispatch($eventNames['completed'], $event);
-
-        return $event->getView();
+        return $vm;
     }
 
     /**
@@ -290,17 +324,21 @@ class VialHandler extends AbstractHandler
     }
 
     /**
-     * @param Collection $collection
+     * @param  Collection $collection
+     * @param  string     $method
      * @return FormInterface
      */
-    private function createBatchForm(Collection $collection)
+    private function createBatchForm(Collection $collection, $method)
     {
         $options = array(
-            'allow_add'     => true,
-            'entry_type'    => TextEntityType::class,
-            'entry_options' => array('class' =>  Vial::class)
+            'allow_add'       => true,
+            'entry_type'      => TextEntityType::class,
+            'entry_options'   => array('class' =>  Vial::class),
+            'csrf_protection' => false
         );
-        $builder = $this->factory->createBuilder(CollectionType::class, $options, $collection)->setMethod('POST');
+
+        $builder = $this->factory->createNamedBuilder('vials', CollectionType::class, $collection, $options)
+            ->setMethod($method);
 
         return $builder->getForm();
     }

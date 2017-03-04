@@ -13,6 +13,6 @@
 namespace Bluemesa\Bundle\FliesBundle\Event;
 
 
-class FlipActionEvent extends BatchActionEvent
+class TrashActionEvent extends BatchActionEvent
 {
 }

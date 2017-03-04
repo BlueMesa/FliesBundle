@@ -61,4 +61,46 @@ final class FlyEvents
      * @Event
      */
     const FLIP_COMPLETED = 'bluemesa.flies.flip_completed';
+
+
+    /**
+     * @Event
+     */
+    const TRASH_INITIALIZE = 'bluemesa.flies.trash_initialize';
+
+    /**
+     * @Event
+     */
+    const TRASH_SUBMITTED = 'bluemesa.flies.trash_submitted';
+
+    /**
+     * @Event
+     */
+    const TRASH_SUCCESS = 'bluemesa.flies.trash_success';
+
+    /**
+     * @Event
+     */
+    const TRASH_COMPLETED = 'bluemesa.flies.trash_completed';
+
+
+    /**
+     * @Event
+     */
+    const UNTRASH_INITIALIZE = 'bluemesa.flies.untrash_initialize';
+
+    /**
+     * @Event
+     */
+    const UNTRASH_SUBMITTED = 'bluemesa.flies.untrash_submitted';
+
+    /**
+     * @Event
+     */
+    const UNTRASH_SUCCESS = 'bluemesa.flies.untrash_success';
+
+    /**
+     * @Event
+     */
+    const UNTRASH_COMPLETED = 'bluemesa.flies.untrash_completed';
 }

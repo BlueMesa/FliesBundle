@@ -3,7 +3,7 @@
 /*
  * This file is part of the Flies Bundle.
  * 
- * Copyright (c) 2016 BlueMesa LabDB Contributors <labdb@bluemesa.eu>
+ * Copyright (c) 2017 BlueMesa LabDB Contributors <labdb@bluemesa.eu>
  * 
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,31 +13,38 @@
 namespace Bluemesa\Bundle\FliesBundle\Event;
 
 use Bluemesa\Bundle\CoreBundle\Event\ControllerEvent;
+use Bluemesa\Bundle\CoreBundle\Event\FormEventInterface;
+use Bluemesa\Bundle\CoreBundle\Event\FormEventTrait;
 use Bluemesa\Bundle\FliesBundle\Entity\VialInterface;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use FOS\RestBundle\View\View;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 
-class BatchActionEvent extends ControllerEvent implements VialEventInterface
+class BatchActionEvent extends ControllerEvent implements VialEventInterface, FormEventInterface
 {
     use VialEventTrait;
+    use FormEventTrait;
 
     /**
      * @var Collection
      */
     protected $sources;
 
+
     /**
-     * PermissionsActionEvent constructor.
+     * BatchActionEvent constructor.
      *
      * @param Request                   $request
      * @param VialInterface|Collection  $source
      * @param VialInterface|Collection  $result
+     * @param FormInterface             $form
      * @param View                      $view
      */
-    public function __construct(Request $request, $source, $result = null, View $view = null)
+    public function __construct(Request $request, $source, $result = null,
+                                FormInterface $form, View $view = null)
     {
         $this->request = $request;
 
@@ -59,6 +66,14 @@ class BatchActionEvent extends ControllerEvent implements VialEventInterface
     }
 
     /**
+     * @return Collection|VialInterface
+     */
+    public function getSource()
+    {
+        return $this->sources->count() > 1 ? $this->sources : $this->sources->first();
+    }
+
+    /**
      * @return VialInterface
      * @throws \LogicException
      */
@@ -77,7 +92,9 @@ class BatchActionEvent extends ControllerEvent implements VialEventInterface
     public function setSourceVial(VialInterface $vial = null)
     {
         $this->sources->clear();
-        $this->addSourceVial($vial);
+        if (null !== $vial) {
+            $this->addSourceVial($vial);
+        }
     }
 
     /**
