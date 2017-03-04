@@ -45,6 +45,27 @@ final class FlyEvents
     /**
      * @Event
      */
+    const GIVE_INITIALIZE = 'bluemesa.flies.give_initialize';
+
+    /**
+     * @Event
+     */
+    const GIVE_SUBMITTED = 'bluemesa.flies.give_submitted';
+
+    /**
+     * @Event
+     */
+    const GIVE_SUCCESS = 'bluemesa.flies.give_success';
+
+    /**
+     * @Event
+     */
+    const GIVE_COMPLETED = 'bluemesa.flies.give_completed';
+
+
+    /**
+     * @Event
+     */
     const FLIP_INITIALIZE = 'bluemesa.flies.flip_initialize';
 
     /**

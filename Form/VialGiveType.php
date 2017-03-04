@@ -20,6 +20,7 @@ namespace Bluemesa\Bundle\FliesBundle\Form;
 
 use Bluemesa\Bundle\AclBundle\Form\UserTypeaheadType;
 use Bluemesa\Bundle\CoreBundle\Form\TextEntityType;
+use Bluemesa\Bundle\FliesBundle\Entity\Vial;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -40,7 +41,7 @@ class VialGiveType extends AbstractType
     {
         $builder->add('source', TextEntityType::class, array(
                         'choice_label'        => 'id',
-                        'class'               => 'BluemesaFliesBundle:Vial',
+                        'class'               => Vial::class,
                         'format'              => '%06d',
                         'label'               => 'Source',
                         'attr'                => array('class' => 'barcode'),
@@ -66,10 +67,12 @@ class VialGiveType extends AbstractType
                         'placeholder' => false,
                     )
                 )
-                ->add('options', Type\VialOptionsType::class, array(
+                ->add('template', Type\VialOptionsType::class, array(
                         'horizontal'        => false,
                         'label_render'      => false,
-                        'widget_form_group' => false
+                        'widget_form_group' => false,
+                        'inherit_data'      => false,
+                        'data_class'        => Vial::class
                     )
                 );
     }

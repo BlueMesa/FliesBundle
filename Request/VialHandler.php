@@ -20,11 +20,11 @@ use Bluemesa\Bundle\CoreBundle\Request\AbstractHandler;
 use Bluemesa\Bundle\CoreBundle\Request\FormHandlerTrait;
 use Bluemesa\Bundle\FliesBundle\Doctrine\VialManager;
 use Bluemesa\Bundle\FliesBundle\Entity\Vial;
-use Bluemesa\Bundle\FliesBundle\Entity\VialInterface;
 use Bluemesa\Bundle\FliesBundle\Event\BatchActionEvent;
 use Bluemesa\Bundle\FliesBundle\Event\ExpandActionEvent;
 use Bluemesa\Bundle\FliesBundle\Event\FlipActionEvent;
 use Bluemesa\Bundle\FliesBundle\Event\FlyEvents;
+use Bluemesa\Bundle\FliesBundle\Event\GiveActionEvent;
 use Bluemesa\Bundle\FliesBundle\Event\TrashActionEvent;
 use Bluemesa\Bundle\FliesBundle\Event\UntrashActionEvent;
 use Bluemesa\Bundle\FliesBundle\Form\VialExpandType;
@@ -109,6 +109,80 @@ class VialHandler extends AbstractHandler
 
             $vials = $vm->expand($source, $number, true, $template);
             $vm->flush();
+
+            return $vials;
+        };
+
+        return $this->handleFormRequest($request, $vial, $form, $events, $handler);
+    }
+
+    /**
+     * This method handles expand action requests.
+     *
+     * @param  Request $request
+     * @return View
+     */
+    public function handleGiveAction(Request $request)
+    {
+        $vial = $request->get('entity');
+        $vm = $this->getVialManager($vial, $request->get('entity_class'), $request->get('action'));
+        $form = $this->factory->create(VialExpandType::class, array(
+            'source' => $vial,
+            'user' => null,
+            'type' => 'give',
+            'template' => $vial,
+        ));
+
+        $events = array(
+            'class' => GiveActionEvent::class,
+            'initialize' => FlyEvents::EXPAND_INITIALIZE,
+            'submitted' => FlyEvents::EXPAND_SUBMITTED,
+            'success' => FlyEvents::EXPAND_SUCCESS,
+            'completed' => FlyEvents::EXPAND_COMPLETED
+        );
+
+        $handler = function(Request $request, BatchActionEvent $event) use ($vm) {
+            $form = $event->getForm();
+            $source = $form->get('source')->getData();
+            $user = $form->get('user')->getData();
+            $type = $form->get('type')->getData();
+            /** @var Vial $template */
+            $template = $form->get('template')->getData();
+
+            $vm->disableAutoAcl();
+
+            if (($type == 'flip') || ($type == 'flipped')) {
+                $vial = $vm->flip($source);
+                $vial->setSize($template->getSize());
+                $vial->setFood($template->getFood());
+                if ($type == 'flip') {
+                    $vial->setPosition($source->getPosition());
+                    $vm->persist($source);
+                }
+                $vm->persist($vial);
+            }
+
+            $vm->flush();
+            $vials = new ArrayCollection();
+
+            switch($type) {
+                /** @noinspection PhpMissingBreakStatementInspection */
+                case 'give':
+                    $vm->setOwner($source, $user);
+                    $vials->add($source);
+                case 'flip':
+                    /** @noinspection PhpUndefinedVariableInspection */
+                    $vm->createACL($vial);
+                    $vials->add($vial);
+                    break;
+                case 'flipped':
+                    /** @noinspection PhpUndefinedVariableInspection */
+                    $vm->createACL($vial, $user);
+                    $vials->add($vial);
+                    break;
+            }
+
+            $vm->enableAutoAcl();
 
             return $vials;
         };
@@ -210,28 +284,14 @@ class VialHandler extends AbstractHandler
     }
 
     /**
-     * This method handles untrash action requests.
+     * This method handles label action requests.
      *
      * @param  Request $request
      * @return View
      */
     public function handleLabelAction(Request $request)
     {
-        $events = array(
-            'initialize' => FlyEvents::UNTRASH_INITIALIZE,
-            'submitted' => FlyEvents::UNTRASH_SUBMITTED,
-            'success' => FlyEvents::UNTRASH_SUCCESS,
-            'completed' => FlyEvents::UNTRASH_COMPLETED
-        );
-
-        $handler = function(Request $request, $vials, VialManager $vm, UntrashActionEvent $event) {
-            $vm->untrash($vials);
-            $vm->flush();
-
-            return $vials;
-        };
-
-        return $this->handleBatchAction($request, 'PUT', UntrashActionEvent::class, $events, $handler);
+        return View::create();
     }
 
     /**

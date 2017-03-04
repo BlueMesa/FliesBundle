@@ -19,7 +19,7 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 
 
-class ExpandActionEvent extends BatchActionEvent
+class GiveActionEvent extends BatchActionEvent
 {
     /**
      * ExpandActionEvent constructor.
